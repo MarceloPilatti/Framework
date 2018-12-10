@@ -1,6 +1,6 @@
 <?php
 
-namespace Lib;
+namespace Framework;
 
 use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\HttpFoundation\RequestStack;

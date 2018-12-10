@@ -1,6 +1,6 @@
 <?php
 
-namespace Lib;
+namespace Framework;
 
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Session\Session;

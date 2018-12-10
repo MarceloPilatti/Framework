@@ -1,15 +1,17 @@
 {
-    "name" : "marcelo-pilatti/framework",
-    "description": "Mini framework para meus projetos",
-    "require" : {
-        "php" : "^7.2",
-        "symfony/http-foundation": "^4.2",
-        "symfony/http-kernel": "^4.2",
-        "symfony/routing": "^4.2"
-    },
-    "autoload" : {
-        "psr-4" : {
-            "framework\\" : "src/"
-        }
+  "name" : "marcelo-pilatti/framework",
+  "description": "Mini framework para meus projetos",
+  "version": "1.0.0",
+  "minimum-stability": "stable",
+  "require" : {
+    "php" : "^7.2",
+    "symfony/http-foundation": "^4.2",
+    "symfony/http-kernel": "^4.2",
+    "symfony/routing": "^4.2"
+  },
+  "autoload" : {
+    "psr-4" : {
+      "framework\\" : "src/"
     }
+  }
 }

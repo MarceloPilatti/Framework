@@ -1,6 +1,6 @@
 <?php
 
-namespace Lib;
+namespace Framework;
 
 use DateTime;
 use Intervention\Image\ImageManagerStatic as Image;
