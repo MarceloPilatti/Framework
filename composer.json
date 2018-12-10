@@ -17,26 +17,11 @@
         "php" : "^7.2",
         "symfony/http-foundation": "^4.2",
         "symfony/http-kernel": "^4.2",
-        "symfony/routing": "^4.2",
-        "phpmailer/phpmailer": "^6.0",
-        "intervention/image": "^2.4",
-        "ext-gd": "*",
-        "ext-json": "*",
-        "ext-pdo": "*"
+        "symfony/routing": "^4.2"
     },
     "autoload" : {
         "psr-4" : {
-            "" : "app/src",
-            "Lib\\" : "lib/"
+            "framework" : "src/"
         }
-    },
-    "scripts" : {
-        "minify:js" : "cd public/js/;uglifyjs script.js -c -m -o script.min.js",
-        "minify:css" : "cd public/css/;uglifycss style.css --output style.min.css;",
-        "dump" : "composer dump-autoload --optimize --no-dev --classmap-authoritative",
-        "upload:clear" : "sudo rm -rf data/uploads/*",
-        "upload:create" : "sudo mkdir -m 777 data/uploads",
-        "cache:clear" : "sudo rm -rf data/cache/*",
-        "cache:create" : "sudo mkdir -m 777 data/cache"
     }
 }
