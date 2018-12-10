@@ -1,18 +1,6 @@
 {
     "name" : "marcelo-pilatti/framework",
-    "type": "library",
     "description": "Mini framework para meus projetos",
-    "keywords": [],
-    "homepage": "https://github.com/MarceloPilatti/Framework",
-    "license": "MIT",
-    "authors": [
-        {
-            "name": "Marcelo Pilatti",
-            "email": "marcelo.silva979@gmail.com",
-            "homepage": "https://github.com/MarceloPilatti",
-            "role": "Developer"
-        }
-    ],
     "require" : {
         "php" : "^7.2",
         "symfony/http-foundation": "^4.2",
