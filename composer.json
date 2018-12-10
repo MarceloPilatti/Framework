@@ -11,7 +11,7 @@
   },
   "autoload" : {
     "psr-4" : {
-      "framework\\" : "src/"
+      "Framework\\" : "src/"
     }
   }
 }
