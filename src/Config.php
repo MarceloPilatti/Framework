@@ -23,7 +23,7 @@ abstract class Config
 
     public static function getConfig()
     {
-        return include __DIR__ . '/../config/config.php';
+        return include dirname(__DIR__, 4) .'/config/config.php';
     }
 
     public static function getVersion()

@@ -38,7 +38,7 @@ abstract class Setup
         $session->set('updatedAt', $updatedAt);
         $session->set('dBName', $dBName);
 
-        $routes = include __DIR__ . "/../app/config/routes.php";
+        $routes = include dirname(__DIR__, 4) . "/app/config/routes.php";
 
         $app = new Application($routes);
         try {

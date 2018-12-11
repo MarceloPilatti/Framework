@@ -13,9 +13,9 @@ class View
     function __construct($viewPath = null, $params = null, $layoutPath = null)
     {
         if ($layoutPath == null) {
-            $layoutPath = __DIR__ . '/../app/view/layout.phtml';
+            $layoutPath = dirname(__DIR__, 4)  . '/app/view/layout.phtml';
         }
-        $viewPath = __DIR__ . '/../app/view/' . $viewPath . '.phtml';
+        $viewPath = dirname(__DIR__, 4) . '/app/view/' . $viewPath . '.phtml';
         if (!isset($layoutPath) || !file_exists($layoutPath)) {
             throw new \Exception('View file ' . $layoutPath . ' not found');
         }
