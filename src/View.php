@@ -62,12 +62,17 @@ class View
 
     public function render()
     {
+        ob_start();
         require_once $this->layoutPath;
-        return new Response();
+        $html = ob_get_clean();
+        return new Response($html);
     }
 
     public function content()
     {
-        return require_once $this->viewPath;
+        ob_start();
+        require_once $this->viewPath;
+        $html = ob_get_clean();
+        echo $html;
     }
 }

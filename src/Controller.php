@@ -35,6 +35,6 @@ abstract class Controller
 
     public function getFormData(Request $request)
     {
-        return array_merge($request->query->all(), $request->files->all(), $request->attributes->all());
+        return array_merge($request->query->all(), $request->files->all(), $request->attributes->all(), $request->request->all());
     }
 }
