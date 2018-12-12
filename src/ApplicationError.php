@@ -4,10 +4,10 @@ namespace Framework;
 
 abstract class ApplicationError
 {
-    public static function showError(\Throwable $throwable, int $type)
+    public static function showError(\Throwable $throwable, int $type, $viewName='main/error/error-page')
     {
         if ($type == ErrorType::NOTFOUND) {
-            $view = new View('error/error-page');
+            $view = new View($viewName);
             return $view->render();
         } elseif ($type == ErrorType::ERROR) {
             $message = null;
@@ -31,7 +31,7 @@ abstract class ApplicationError
                     $message .= "</tbody></table></div>";
                 }
             }
-            $view = new View('error/error-page', ["message" => $message]);
+            $view = new View($viewName, ["message" => $message]);
             return $view->render();
         }
     }

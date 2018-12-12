@@ -10,12 +10,11 @@ class View
     private $viewPath;
     private $layoutPath;
 
-    function __construct($viewPath = null, $params = null, $layoutPath = null)
+    function __construct($viewName = null, $params = null, $layoutName = "main/layout")
     {
-        if ($layoutPath == null) {
-            $layoutPath = dirname(__DIR__, 4)  . '/app/view/layout.phtml';
-        }
-        $viewPath = dirname(__DIR__, 4) . '/app/view/' . $viewPath . '.phtml';
+        $viewMap = include dirname(__DIR__, 4) . "/app/config/view-map.php";
+        $viewPath=$viewMap[$viewName];
+        $layoutPath=$viewMap[$layoutName];
         if (!isset($layoutPath) || !file_exists($layoutPath)) {
             throw new \Exception('View file ' . $layoutPath . ' not found');
         }
