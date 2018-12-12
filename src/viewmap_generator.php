@@ -1,7 +1,7 @@
 #!/usr/bin/env php
 <?php
-$mainModule=dirname(__DIR__, 4)."/app/main/view";
-$adminModule=dirname(__DIR__, 4)."/app/admin/view";
+$mainModule="../main/view";
+$adminModule="../admin/view";
 
 $filesMain = findTemplateFilesInTemplatePath($mainModule);
 $filesAdmin = findTemplateFilesInTemplatePath($adminModule);
