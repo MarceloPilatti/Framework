@@ -24,4 +24,5 @@ abstract class RuleType
     const CNPJ = 'cnpj';
     const MONEY = 'money';
     const NORMAL_CHARS = 'normal-chars';
+    const URL = 'url';
 }

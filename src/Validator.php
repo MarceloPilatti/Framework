@@ -142,7 +142,6 @@ class Validator
                                 $entityValues[$ruleKey] = $data;
                                 break;
                             case RuleType::HTML:
-
                                 if (array_search("required", $rulesArray) !== false) {
                                     if (!$data || $data === '<p>&nbsp;</p>') {
                                         $msgError .= "Este campo é obrigatório.<br />";
@@ -284,6 +283,21 @@ class Validator
                                 }
                                 $cnpj = str_replace(['.', '-', '/'], "", $cnpj);
                                 $entityValues[$ruleKey] = $cnpj;
+                                break;
+                            case RuleType::URL:
+                                $url = trim($data);
+                                $path = parse_url($url, PHP_URL_PATH);
+                                $encoded_path = array_map('urlencode', explode('/', $path));
+                                $url = str_replace($path, implode('/', $encoded_path), $url);
+                                $filteredUrl=Filter::filterUrl($url);
+                                if($filteredUrl!==false){
+                                    $msgError .= "Link inválido.<br />";
+                                }
+                                $validatedUrl = filter_var($url, FILTER_VALIDATE_URL);
+                                if($validatedUrl!==false){
+                                    $msgError .= "Link inválido.<br />";
+                                }
+                                $entityValues[$ruleKey] = $url;
                                 break;
                         }
                     }
