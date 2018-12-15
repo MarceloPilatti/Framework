@@ -37,4 +37,8 @@ abstract class Controller
     {
         return array_merge($request->query->all(), $request->files->all(), $request->attributes->all(), $request->request->all());
     }
+    public function getFormParameter(Request $request, $key)
+    {
+        return $this->getFormData($request)[$key];
+    }
 }

@@ -17,14 +17,12 @@ class ConnectionFactory
         return self::$factory;
     }
 
-    public function getConnection($dBName = null)
+    public function getConnection()
     {
         try {
+            $dBName=Config::getDBName();
             $config = Config::getConfig();
             if (!$this->pdo) {
-                if (!$dBName) {
-                    $dBName = Config::getDBName();
-                }
                 $this->pdo = new \PDO(sprintf("mysql:host=%s;dbname=%s", $config["db"]["server"], $dBName), $config["db"]["user"], $config["db"]["password"]);
                 $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
                 $this->pdo->exec("set names utf8");

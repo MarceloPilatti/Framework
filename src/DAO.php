@@ -9,12 +9,10 @@ abstract class DAO
     public $tableName;
     public $dBConnection;
     public $entity;
-    public $dBName;
 
-    public function __construct($dBName = null)
+    public function __construct()
     {
         $this->dBConnection = ConnectionFactory::getFactory()->getConnection();
-        $this->dBName = $dBName;
     }
 
     public function insert($entity)
@@ -52,7 +50,7 @@ abstract class DAO
 
     public function getColumnNames()
     {
-        $sql = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='" . $this->dBName . "' AND TABLE_NAME = '$this->tableName'";
+        $sql = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='" . Config::getDBName() . "' AND TABLE_NAME = '$this->tableName'";
         $stmt = $this->dBConnection->prepare($sql);
         try {
             $columnNames = [];

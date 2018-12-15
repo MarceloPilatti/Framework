@@ -13,16 +13,14 @@ class Validator
     private $entityRules;
     private $entityNames;
     private $entityId;
-    private $dBName;
     private $entities = [];
 
-    public function __construct($formData, $entityRules, $entityNames, $entityId, $dBName)
+    public function __construct($formData, $entityRules, $entityNames, $entityId)
     {
         $this->formData = $formData;
         $this->entityRules = $entityRules;
         $this->entityNames = $entityNames;
         $this->entityId = $entityId;
-        $this->dBName = $dBName;
     }
 
     public function validateForm()
@@ -32,9 +30,8 @@ class Validator
         $inputs = null;
         $entityRulesArray = $this->entityRules;
         $entityNamesArray = $this->entityNames;
-        $dBName = $this->dBName;
         $entityId = $this->entityId;
-        $formdata = $this->formData;
+        $formData = $this->formData;
         $fKEntityId = null;
         $entityMultipleFiles = [];
         if (!is_array($entityRulesArray)) {
@@ -44,10 +41,9 @@ class Validator
         foreach ($entityRulesArray as $count => $entityRuleArray) {
             $entityName = $entityNamesArray[$count];
             $entityClass = substr(strrchr($entityName, "\\"), 1);
-            $entityDAOName = 'app\\DAO\\' . $entityClass . 'DAO';
+            $entityDAOName = 'Main\\DAO\\' . $entityClass . 'DAO';
             $entityClass = strtolower($entityClass);
             $entityDAO = new $entityDAOName;
-            $entityDAO->dBName = $dBName;
             $entity = $entityDAO->getById($entityId);
             if ($entity) {
                 $entityValues = $entity->getAttrs();
@@ -62,7 +58,7 @@ class Validator
                 } else {
                     $rulesArray = [$rules];
                 }
-                if (!array_key_exists($ruleKey, $formdata) && !$fKEntityId) {
+                if (!array_key_exists($ruleKey, $formData) && !$fKEntityId) {
                     $isDefault = false;
                     foreach ($rulesArray as $rule) {
                         $isDefault = strpos($rule, (RuleType::DEFAULT)) !== false || strpos($rule, RuleType::DATE) !== false || strpos($rule, RuleType::DATETIME) !== false && !$entityId;
@@ -74,7 +70,7 @@ class Validator
                         continue;
                     }
                 }
-                $data = $formdata[$ruleKey];
+                $data = $formData[$ruleKey];
                 $msgError = "";
                 $entityValues[$ruleKey] = $data;
                 foreach ($rulesArray as $rule) {
@@ -181,8 +177,8 @@ class Validator
                                 $fieldData = trim($data);
                                 $fieldKey = $ruleKey;
                                 $confirmFieldName = 'confirm' . ucfirst($fieldKey);
-                                if (array_key_exists($confirmFieldName, $formdata)) {
-                                    $confirmFieldData = $formdata[$confirmFieldName];
+                                if (array_key_exists($confirmFieldName, $formData)) {
+                                    $confirmFieldData = $formData[$confirmFieldName];
                                     if ($fieldData !== $confirmFieldData) {
                                         $msgError .= 'Os valores não conferem.';
                                     }
