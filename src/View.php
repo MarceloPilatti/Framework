@@ -48,9 +48,13 @@ class View
         $flashMessages = $session->getFlashBag()->all();
         if ($flashMessages) {
             foreach ($flashMessages as $type => $messages) {
+                $messageCount=count($messages);
+                $listStyle=(($messageCount==1)?('list-unstyled'):('pl-2'));
+                $flashDivs .= '<div id="flash" class="alert alert-' . $type . '"><ul class="'.$listStyle.' m-1">';
                 foreach ($messages as $message) {
-                    $flashDivs .= '<div id="flash" class="alert alert-' . $type . '">' . $message . '</div>';
+                    $flashDivs .= '<li>'.$message.'</li>';
                 }
+                $flashDivs .= '</ul></div>';
             }
         }
         $this->flashMessages = $flashDivs;
