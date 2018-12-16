@@ -49,7 +49,7 @@ class View
         if ($flashMessages) {
             foreach ($flashMessages as $type => $messages) {
                 foreach ($messages as $message) {
-                    $flashDivs .= '<div class="alert alert-' . $type . '">' . $message . '</div>';
+                    $flashDivs .= '<div id="flash" class="alert alert-' . $type . '">' . $message . '</div>';
                 }
             }
         }

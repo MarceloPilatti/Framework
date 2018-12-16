@@ -23,9 +23,12 @@ abstract class Controller
         exit();
     }
 
-    public function showMessage(Session $session, $type, $message)
+    public function showMessage(Session $session, $type, $message, $redirectTo=false)
     {
         $session->getFlashBag()->add($type, $message);
+        if($redirectTo){
+            $this->redirectTo($redirectTo);
+        }
     }
 
     public function isPost(Request $request)
