@@ -31,7 +31,7 @@ abstract class Setup
 
         $env = getenv('APPLICATION_ENV');
         $session->set('minify', '');
-        if (getenv("APPLICATION_ENV") != "development") {
+        if ($env != "development") {
             $session->set('minify', '.min');
         }
         $session->set('version', $version);
