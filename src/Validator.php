@@ -189,6 +189,9 @@ class Validator
                                 $validExtensions = $entityRule["extensions"];
                                 $multipleFile = $entityRule["multiple"];
                                 $files = $data;
+                                if(!$files){
+                                    break;
+                                }
                                 if (!$multipleFile && (!$files->getClientOriginalName() || $files->getClientOriginalName()=="") && $entityId && $entity->filePath) {
                                     $entityValues['fileName'] = $entity->fileName;
                                     $entityValues['filePath'] = $entity->filePath;
