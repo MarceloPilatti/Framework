@@ -188,16 +188,14 @@ class Validator
                             case RuleType::FILE:
                                 $validExtensions = $entityRule["extensions"];
                                 $multipleFile = $entityRule["multiple"];
-                                $files = $data[$ruleKey];
-                                if (!$multipleFile && !array_key_exists('name', $files) && $entityId && $entity->filePath) {
+                                $files = $data;
+                                if (!$multipleFile && (!$files->getClientOriginalName() || $files->getClientOriginalName()=="") && $entityId && $entity->filePath) {
                                     $entityValues['fileName'] = $entity->fileName;
                                     $entityValues['filePath'] = $entity->filePath;
                                     break;
                                 }
-                                if (is_array($files)) {
-                                    if (isset($files['name'])) {
-                                        $files = [$files];
-                                    }
+                                if (!is_array($files)) {
+                                    $files = [$files];
                                     foreach ($files as $count => $file) {
                                         $isValid = Validator::validateFile($file, $validExtensions);
                                         if ($isValid !== true) {
@@ -419,7 +417,7 @@ class Validator
     public static function validateEmpty($data)
     {
         $msgError = '';
-        if ('' !== $data && null !== $data) {
+        if ($data == '' && $data==null) {
             $msgError .= "Este campo é obrigatório.<br />";
         }
         return $msgError;
@@ -507,7 +505,7 @@ class Validator
         return $result;
     }
 
-    public static function validateFile(UploadedFile $file, $validExtensions)
+    public static function validateFile($file, $validExtensions)
     {
         try {
             $error = null;
