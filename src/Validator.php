@@ -507,7 +507,7 @@ class Validator
         return $result;
     }
 
-    public static function validateFile(UploadedFile $file, $validExtensions)
+    public static function validateFile($file, $validExtensions)
     {
         try {
             $error = null;
