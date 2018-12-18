@@ -375,13 +375,13 @@ class Validator
         $msgError = '';
         if ($ruleType == RuleType::MIN) {
             $data = trim($data);
-            if ($data < $ruleValue) {
+            if (strlen($data) < $ruleValue) {
                 $msgError .= "São aceitos no mínimo " . $ruleValue . " caracteres.<br />";
             }
         } else {
             if ($ruleType == RuleType::MAX) {
                 $data = trim($data);
-                if ($data > $ruleValue) {
+                if (strlen($data) > $ruleValue) {
                     $msgError .= "São aceitos no máximo " . $ruleValue . " caracteres.<br />";
                 }
             }
