@@ -19,7 +19,7 @@ class Json
 //            foreach ($formerrors as $key => $value) {
 //                $errors[$key . 'error'] = htmlentities("<label id='" . $key . "error' class='text-danger'>" . $value . "</label>");
 //            }
-//            $session->remove('errors');
+            $session->remove('errors');
             $this->params['errors'] = $errors;
         }
 
