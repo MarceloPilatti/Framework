@@ -440,9 +440,11 @@ class Validator
     {
         $result = [];
         $msgError = '';
+        $data=str_replace('.', '', $data);
+        $data=str_replace(',', '.', $data);
         if ($data) {
-            if (!is_int($data)) {
-                $msgError .= "Digite somente números.<br />";
+            if (!is_numeric($data)) {
+                $msgError .= "Digite somente números decimais.<br />";
             }
         }
         $result['data'] = $data;
