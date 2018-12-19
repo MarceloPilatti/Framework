@@ -192,74 +192,79 @@ class Validator
                                 if(!$files){
                                     break;
                                 }
-                                if (!$multipleFile && (!$files->getClientOriginalName() || $files->getClientOriginalName()=="") && $entityId && $entity->filePath) {
+                                if (!is_array($files)) {
+                                    $files = [$files];
+                                }
+                                $filesCount=count($files);
+                                if($filesCount == 1){
+                                    $file=$files[0];
+                                }
+                                if (($multipleFile==0 || $filesCount == 1) && (!$file->getClientOriginalName() || $file->getClientOriginalName()=="") && $entityId && $entity->filePath) {
                                     $entityValues['fileName'] = $entity->fileName;
                                     $entityValues['filePath'] = $entity->filePath;
                                     break;
                                 }
-                                if (!is_array($files)) {
-                                    $files = [$files];
-                                    foreach ($files as $count => $file) {
-                                        $isValid = Validator::validateFile($file, $validExtensions);
-                                        if ($isValid !== true) {
-                                            $msgError .= $isValid;
-                                        }
-                                        $fileOriginalName = $file->getClientOriginalName();
-                                        $tempName = $file->getPathname();
-                                        $fullDestPath = './data/uploads/' . $entityClass . '/';
-                                        if (!is_dir($fullDestPath)) {
-                                            mkdir($fullDestPath, 0777, true);
-                                        }
-                                        $isImage = $entityRule["isImage"];
-                                        if ($isImage == 1) {
-                                            $fullDestThumbPath = $fullDestPath . 'thumb/';
-                                            if (!is_dir($fullDestThumbPath)) {
-                                                mkdir($fullDestThumbPath, 0777, true);
-                                            }
-                                        }
-                                        $filePath = $fullDestPath;
-                                        $fileExtension = pathinfo($fileOriginalName, PATHINFO_EXTENSION);
-                                        $fileName = md5(uniqid(rand(), true) . time()) . '.' . $fileExtension;
-                                        $destFileName = $fullDestPath . $fileName;
 
-                                        $isImage = $entityRule["isImage"];
-                                        if ($isImage == 1) {
-                                            $fullDestThumbPath = $fullDestPath . 'thumb/';
-                                            if (!is_dir($fullDestThumbPath)) {
-                                                mkdir($fullDestThumbPath, 0777, true);
-                                            }
-                                            $destThumbName = $fullDestThumbPath . $fileName;
-                                            $imgSize = $entityRule["size"];
-                                            $img = Image::make($tempName);
-                                            if ($imgSize) {
-                                                $imgSize = explode('x', $imgSize);
-                                                $width = $imgSize[0];
-                                                $height = $imgSize[1];
-                                                $img->fit($width, $height);
-                                            }
-                                            $img = $img->save($destFileName, 75);
-                                            if (!$img) {
-                                                $msgError .= 'Erro ao salvar a imagem.<br />';
-                                            }
-                                            $img = Image::make($tempName)->fit(100, 100)->save($destThumbName, 70);
-                                            if (!$img) {
-                                                $msgError .= 'Erro ao salvar a miniatura.<br />';
-                                            }
-                                        } else {
-                                            move_uploaded_file($tempName, $destFileName);
+                                foreach ($files as $count => $file) {
+                                    $isValid = Validator::validateFile($file, $validExtensions);
+                                    if ($isValid !== true) {
+                                        $msgError .= $isValid;
+                                    }
+                                    $fileOriginalName = $file->getClientOriginalName();
+                                    $tempName = $file->getPathname();
+                                    $fullDestPath = './data/uploads/' . $entityClass . '/';
+                                    if (!is_dir($fullDestPath)) {
+                                        mkdir($fullDestPath, 0777, true);
+                                    }
+                                    $isImage = $entityRule["isImage"];
+                                    if ($isImage == 1) {
+                                        $fullDestThumbPath = $fullDestPath . 'thumb/';
+                                        if (!is_dir($fullDestThumbPath)) {
+                                            mkdir($fullDestThumbPath, 0777, true);
                                         }
-                                        if ($multipleFile) {
-                                            $entityMultipleFiles[$count]['fileOriginalName'] = $fileOriginalName;
-                                            $entityMultipleFiles[$count]['fileName'] = $fileName;
-                                            $entityMultipleFiles[$count]['filePath'] = $filePath;
-                                            $entityValues['fileOriginalName'] = null;
-                                            $entityValues['fileName'] = null;
-                                            $entityValues['filePath'] = null;
-                                        } else {
-                                            $entityValues['fileOriginalName'] = $fileOriginalName;
-                                            $entityValues['fileName'] = $fileName;
-                                            $entityValues['filePath'] = $fullDestPath;
+                                    }
+                                    $filePath = $fullDestPath;
+                                    $fileExtension = pathinfo($fileOriginalName, PATHINFO_EXTENSION);
+                                    $fileName = md5(uniqid(rand(), true) . time()) . '.' . $fileExtension;
+                                    $destFileName = $fullDestPath . $fileName;
+
+                                    $isImage = $entityRule["isImage"];
+                                    if ($isImage == 1) {
+                                        $fullDestThumbPath = $fullDestPath . 'thumb/';
+                                        if (!is_dir($fullDestThumbPath)) {
+                                            mkdir($fullDestThumbPath, 0777, true);
                                         }
+                                        $destThumbName = $fullDestThumbPath . $fileName;
+                                        $imgSize = $entityRule["size"];
+                                        $img = Image::make($tempName);
+                                        if ($imgSize) {
+                                            $imgSize = explode('x', $imgSize);
+                                            $width = $imgSize[0];
+                                            $height = $imgSize[1];
+                                            $img->fit($width, $height);
+                                        }
+                                        $img = $img->save($destFileName, 75);
+                                        if (!$img) {
+                                            $msgError .= 'Erro ao salvar a imagem.<br />';
+                                        }
+                                        $img = Image::make($tempName)->fit(100, 100)->save($destThumbName, 70);
+                                        if (!$img) {
+                                            $msgError .= 'Erro ao salvar a miniatura.<br />';
+                                        }
+                                    } else {
+                                        move_uploaded_file($tempName, $destFileName);
+                                    }
+                                    if ($multipleFile) {
+                                        $entityMultipleFiles[$count]['fileOriginalName'] = $fileOriginalName;
+                                        $entityMultipleFiles[$count]['fileName'] = $fileName;
+                                        $entityMultipleFiles[$count]['filePath'] = $filePath;
+                                        $entityValues['fileOriginalName'] = null;
+                                        $entityValues['fileName'] = null;
+                                        $entityValues['filePath'] = null;
+                                    } else {
+                                        $entityValues['fileOriginalName'] = $fileOriginalName;
+                                        $entityValues['fileName'] = $fileName;
+                                        $entityValues['filePath'] = $fullDestPath;
                                     }
                                 }
                                 break;
