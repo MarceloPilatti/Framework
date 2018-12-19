@@ -288,15 +288,18 @@ class Validator
                                 break;
                             case RuleType::URL:
                                 $url = trim($data);
+                                if(!$url){
+                                    break;
+                                }
                                 $path = parse_url($url, PHP_URL_PATH);
                                 $encoded_path = array_map('urlencode', explode('/', $path));
                                 $url = str_replace($path, implode('/', $encoded_path), $url);
                                 $filteredUrl=Filter::filterUrl($url);
-                                if($filteredUrl!==false){
+                                if($filteredUrl===false){
                                     $msgError .= "Link inválido.<br />";
                                 }
                                 $validatedUrl = filter_var($url, FILTER_VALIDATE_URL);
-                                if($validatedUrl!==false){
+                                if($validatedUrl===false){
                                     $msgError .= "Link inválido.<br />";
                                 }
                                 $entityValues[$ruleKey] = $url;
