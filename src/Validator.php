@@ -241,7 +241,7 @@ class Validator
                                         if (!$img) {
                                             $msgError .= 'Erro ao salvar a imagem.<br />';
                                         }
-                                        $img = Image::make($tempName)->fit(100, 100)->save($destThumbName, 70);
+                                        $img = Image::make($tempName)->fit(150, 150)->save($destThumbName, 70);
                                         if (!$img) {
                                             $msgError .= 'Erro ao salvar a miniatura.<br />';
                                         }
