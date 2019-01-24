@@ -14,11 +14,7 @@ class Json
         $this->params = $params;
         $session = new Session();
         if ($session->has('errors')) {
-//            $errors = array();
             $errors = $session->get('errors');
-//            foreach ($formerrors as $key => $value) {
-//                $errors[$key . 'error'] = htmlentities("<label id='" . $key . "error' class='text-danger'>" . $value . "</label>");
-//            }
             $session->remove('errors');
             $this->params['errors'] = $errors;
         }

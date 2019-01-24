@@ -4,7 +4,6 @@ namespace Framework;
 
 use DateTime;
 use Intervention\Image\ImageManagerStatic as Image;
-use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Session\Session;
 
 class Validator
@@ -34,6 +33,10 @@ class Validator
         $formData = $this->formData;
         $fKEntityId = null;
         $entityMultipleFiles = [];
+        $multipleFile=false;
+        $many=false;
+        $entityForeignKeys=[];
+        $entities=[];
         if (!is_array($entityRulesArray)) {
             $entityRulesArray = [$entityRulesArray];
         }
@@ -80,38 +83,28 @@ class Validator
                         $ruleValue = $ruleInfo[1];
                         if ($ruleDesc === RuleType::MIN) {
                             $msgError .= Validator::validateMaxMin($data, $ruleValue, RuleType::MIN);
-                        } else {
-                            if ($ruleDesc === RuleType::MAX) {
-                                $msgError .= Validator::validateMaxMin($data, $ruleValue, RuleType::MAX);
-                            } else {
-                                if ($ruleDesc === RuleType::DEFAULT) {
-                                    $entityValues[$ruleKey] = $ruleValue;
-                                } else {
-                                    if ($ruleDesc === RuleType::NORMAL_CHARS) {
-                                        $specialCharsValidated = Validator::validateSpecialChars($data, $ruleValue);
-                                        $msgError .= $specialCharsValidated['msgError'];
-                                        $entityValues[$ruleKey] = $specialCharsValidated['data'];
-                                    } else {
-                                        if ($ruleDesc === RuleType::FOREIGN_KEY) {
-                                            if ($ruleValue === 'one') {
-                                                if (!$data) {
-                                                    $data = $fKEntityId;
-                                                }
-                                                $entityValues[$ruleKey] = $data;
-                                            } else {
-                                                if ($ruleValue === 'many') {
-                                                    $ids = $data;
-                                                    $many = true;
-                                                    $entityForeignKeys = [];
-                                                    foreach ($ids as $count => $id) {
-                                                        $entityForeignKeys[$ruleKey][$count] = [$ruleKey => $id];
-                                                    }
-                                                    $entityValues[$ruleKey] = null;
-                                                }
-                                            }
-                                        }
-                                    }
+                        } else if ($ruleDesc === RuleType::MAX) {
+                            $msgError .= Validator::validateMaxMin($data, $ruleValue, RuleType::MAX);
+                        } else if ($ruleDesc === RuleType::DEFAULT) {
+                            $entityValues[$ruleKey] = $ruleValue;
+                        } else if ($ruleDesc === RuleType::NORMAL_CHARS) {
+                            $specialCharsValidated = Validator::validateSpecialChars($data, $ruleValue);
+                            $msgError .= $specialCharsValidated['msgError'];
+                            $entityValues[$ruleKey] = $specialCharsValidated['data'];
+                        } else if ($ruleDesc === RuleType::FOREIGN_KEY) {
+                            if ($ruleValue === 'one') {
+                                if (!$data) {
+                                    $data = $fKEntityId;
                                 }
+                                $entityValues[$ruleKey] = $data;
+                            } else if ($ruleValue === 'many') {
+                                $ids = $data;
+                                $many = true;
+                                $entityForeignKeys = [];
+                                foreach ($ids as $count => $id) {
+                                    $entityForeignKeys[$ruleKey][$count] = [$ruleKey => $id];
+                                }
+                                $entityValues[$ruleKey] = null;
                             }
                         }
                     } else {
@@ -186,8 +179,8 @@ class Validator
                                 }
                                 break;
                             case RuleType::FILE:
-                                $validExtensions = $entityRule["extensions"];
-                                $multipleFile = $entityRule["multiple"];
+                                $validExtensions = $entityRule["extensions"]??'';
+                                $multipleFile = $entityRule["multiple"]??0;
                                 $files = $data;
                                 if(!$files){
                                     break;
@@ -196,10 +189,11 @@ class Validator
                                     $files = [$files];
                                 }
                                 $filesCount=count($files);
+                                $file=null;
                                 if($filesCount == 1){
                                     $file=$files[0];
                                 }
-                                if (($multipleFile==0 || $filesCount == 1) && (!$file->getClientOriginalName() || $file->getClientOriginalName()=="") && $entityId && $entity->filePath) {
+                                if (($multipleFile==0 || $filesCount == 1) && ($file && !$file->getClientOriginalName() || $file->getClientOriginalName()=="") && $entityId && $entity->filePath) {
                                     $entityValues['fileName'] = $entity->fileName;
                                     $entityValues['filePath'] = $entity->filePath;
                                     break;
@@ -216,7 +210,7 @@ class Validator
                                     if (!is_dir($fullDestPath)) {
                                         mkdir($fullDestPath, 0777, true);
                                     }
-                                    $isImage = $entityRule["isImage"];
+                                    $isImage = $entityRule["isImage"]??0;
                                     if ($isImage == 1) {
                                         $fullDestThumbPath = $fullDestPath . 'thumb/';
                                         if (!is_dir($fullDestThumbPath)) {
@@ -228,14 +222,14 @@ class Validator
                                     $fileName = md5(uniqid(rand(), true) . time()) . '.' . $fileExtension;
                                     $destFileName = $fullDestPath . $fileName;
 
-                                    $isImage = $entityRule["isImage"];
+                                    $isImage = $entityRule["isImage"]??0;
                                     if ($isImage == 1) {
                                         $fullDestThumbPath = $fullDestPath . 'thumb/';
                                         if (!is_dir($fullDestThumbPath)) {
                                             mkdir($fullDestThumbPath, 0777, true);
                                         }
                                         $destThumbName = $fullDestThumbPath . $fileName;
-                                        $imgSize = $entityRule["size"];
+                                        $imgSize = $entityRule["size"]??null;
                                         $img = Image::make($tempName);
                                         if ($imgSize) {
                                             $imgSize = explode('x', $imgSize);
@@ -492,6 +486,8 @@ class Validator
         $data = trim($data);
         $result = [];
         $msgError = '';
+        $inputFormat='';
+        $storeFormat='';
         if ($ruleType == RuleType::DATETIME) {
             $inputFormat = 'd/m/Y H:i:s';
             $storeFormat = 'Y-m-d H:i:s';
@@ -526,6 +522,10 @@ class Validator
             $tempName = $file->getPathname();
             $fileSize = $file->getSize();
             $fileExtension = pathinfo($fileName, PATHINFO_EXTENSION);
+            if(!$validExtensions){
+                $msg = "A extensão do arquivo " . $fileName . " é inválida.";
+                return $msg;
+            }
             $validExtensions = explode(';', $validExtensions);
             $msg = true;
             $postMaxSize = ini_get('upload_max_filesize');
@@ -640,20 +640,20 @@ class Validator
         if (strlen($cnpj) != 14) {
             return false;
         }
-        for ($i = 0, $j = 5, $soma = 0; $i < 12; $i++) {
-            $soma += $cnpj{$i} * $j;
+        for ($i = 0, $j = 5, $sum = 0; $i < 12; $i++) {
+            $sum += $cnpj{$i} * $j;
             $j = ($j == 2) ? 9 : $j - 1;
         }
-        $resto = $soma % 11;
-        if ($cnpj{12} != ($resto < 2 ? 0 : 11 - $resto)) {
+        $rest = $sum % 11;
+        if ($cnpj{12} != ($rest < 2 ? 0 : 11 - $rest)) {
             return false;
         }
-        for ($i = 0, $j = 6, $soma = 0; $i < 13; $i++) {
-            $soma += $cnpj{$i} * $j;
+        for ($i = 0, $j = 6, $sum = 0; $i < 13; $i++) {
+            $sum += $cnpj{$i} * $j;
             $j = ($j == 2) ? 9 : $j - 1;
         }
-        $resto = $soma % 11;
-        return $cnpj{13} == ($resto < 2 ? 0 : 11 - $resto);
+        $rest = $sum % 11;
+        return $cnpj{13} == ($rest < 2 ? 0 : 11 - $rest);
     }
 
     public function __get($name)
