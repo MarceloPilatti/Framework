@@ -328,8 +328,9 @@ class Validator
                                 return 2;
                             }
                             $entities[$entityClass][$countFile] = $entity;
-                            $fKEntityId=$entity->id;
                         }
+                        $fKEntityId=$entity->id;
+                        $multipleFile=false;
                     }
                 } else {
                     if ($many) {
@@ -349,6 +350,7 @@ class Validator
                                 }
                             }
                         }
+                        $many=false;
                     } else {
                         $entity->setAttrs($entityValues);
                         if ($entityId) {
