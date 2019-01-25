@@ -346,13 +346,8 @@ class Validator
                     if ($many) {
                         $entities = [];
                         if ($entityForeignKeys) {
-                            $allDeleted=$entityDAO->deleteAll();
-                            if(!$allDeleted){
-                                $entityDAO->rollback();
-                                return 2;
-                            }
-                            $count = 0;
                             foreach ($entityForeignKeys as $eFK) {
+                                $count = 0;
                                 foreach ($eFK as $key=>$entityForeignKey) {
                                     $entityValues[$key] = $entityForeignKey;
                                 }
