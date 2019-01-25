@@ -328,6 +328,7 @@ class Validator
                                 return 2;
                             }
                             $entities[$entityClass][$countFile] = $entity;
+                            $fKEntityId=$entity->id;
                         }
                     }
                 } else {
