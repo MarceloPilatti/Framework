@@ -11,15 +11,15 @@ class Validator
     private $formData;
     private $entityRules;
     private $entityNames;
-    private $entityId;
+    private $entityIds;
     private $entities = [];
 
-    public function __construct($formData, $entityRules, $entityNames, $entityId)
+    public function __construct($formData, $entityRules, $entityNames, $entityIds)
     {
         $this->formData = $formData;
         $this->entityRules = $entityRules;
         $this->entityNames = $entityNames;
-        $this->entityId = $entityId;
+        $this->entityIds = $entityIds;
     }
 
     public function validateForm()
@@ -29,7 +29,7 @@ class Validator
         $inputs = null;
         $entityRulesArray = $this->entityRules;
         $entityNamesArray = $this->entityNames;
-        $entityId = $this->entityId;
+        $entityIds = $this->entityIds;
         $formData = $this->formData;
         $fKEntityId = null;
         $entityMultipleFiles = [];
@@ -43,6 +43,7 @@ class Validator
         $entityValues = [];
         $isTransaction=false;
         foreach ($entityRulesArray as $count => $entityRuleArray) {
+            $entityId=$entityIds[$count];
             $entityName = $entityNamesArray[$count];
             $entityClass = substr(strrchr($entityName, "\\"), 1);
             $entityDAOName = 'Main\\DAO\\' . $entityClass . 'DAO';
@@ -346,8 +347,13 @@ class Validator
                     if ($many) {
                         $entities = [];
                         if ($entityForeignKeys) {
+                            $allDeleted=$entityDAO->deleteAll();
+                            if(!$allDeleted){
+                                $entityDAO->rollback();
+                                return 2;
+                            }
+                            $count = 0;
                             foreach ($entityForeignKeys as $eFK) {
-                                $count = 0;
                                 foreach ($eFK as $key=>$entityForeignKey) {
                                     $entityValues[$key] = $entityForeignKey;
                                 }
