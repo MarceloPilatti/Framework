@@ -41,12 +41,17 @@ class Validator
             $entityRulesArray = [$entityRulesArray];
         }
         $entityValues = [];
+        $isTransaction=false;
         foreach ($entityRulesArray as $count => $entityRuleArray) {
             $entityName = $entityNamesArray[$count];
             $entityClass = substr(strrchr($entityName, "\\"), 1);
             $entityDAOName = 'Main\\DAO\\' . $entityClass . 'DAO';
             $entityClass = strtolower($entityClass);
             $entityDAO = new $entityDAOName;
+            if(count($entityRulesArray)>1 && $count==0){
+                $isTransaction=true;
+                $entityDAO->begin();
+            }
             $entity = $entityDAO->getById($entityId);
             if ($entity) {
                 $entityValues = $entity->getAttrs();
@@ -100,9 +105,8 @@ class Validator
                             } else if ($ruleValue === 'many') {
                                 $ids = $data;
                                 $many = true;
-                                $entityForeignKeys = [];
                                 foreach ($ids as $count => $id) {
-                                    $entityForeignKeys[$ruleKey][$count] = [$ruleKey => $id];
+                                    $entityForeignKeys[$count][$ruleKey] = $id;
                                 }
                                 $entityValues[$ruleKey] = null;
                             }
@@ -309,6 +313,9 @@ class Validator
             if ($errors) {
                 $session->set('errors', $errors);
                 $session->set('inputs', $inputs);
+                if($isTransaction){
+                    $entityDAO->rollback();
+                }
                 return 1;
             } else {
                 $session->set('errors', null);
@@ -325,6 +332,9 @@ class Validator
                             $entity->setAttrs($entityValues);
                             $entity = $entityDAO->insert($entity);
                             if (!$entity) {
+                                if($isTransaction){
+                                    $entityDAO->rollback();
+                                }
                                 return 2;
                             }
                             $entities[$entityClass][$countFile] = $entity;
@@ -336,18 +346,21 @@ class Validator
                     if ($many) {
                         $entities = [];
                         if ($entityForeignKeys) {
-                            foreach ($entityForeignKeys as $key => $eFK) {
+                            foreach ($entityForeignKeys as $eFK) {
                                 $count = 0;
-                                foreach ($eFK as $entityForeignKey) {
-                                    $entityValues[$key] = $entityForeignKey[$key];
-                                    $entity->setAttrs($entityValues);
-                                    $entity = $entityDAO->insert($entity);
-                                    if (!$entity) {
-                                        return 2;
-                                    }
-                                    $entities[$entityClass][$count] = $entity;
-                                    $count++;
+                                foreach ($eFK as $key=>$entityForeignKey) {
+                                    $entityValues[$key] = $entityForeignKey;
                                 }
+                                $entity->setAttrs($entityValues);
+                                $entity = $entityDAO->insert($entity);
+                                if (!$entity) {
+                                    if($isTransaction){
+                                        $entityDAO->rollback();
+                                    }
+                                    return 2;
+                                }
+                                $entities[$entityClass][$count] = $entity;
+                                $count++;
                             }
                         }
                         $many=false;
@@ -356,11 +369,17 @@ class Validator
                         if ($entityId) {
                             $result = $entityDAO->update($entity);
                             if (!$result) {
+                                if($isTransaction){
+                                    $entityDAO->rollback();
+                                }
                                 return 2;
                             }
                         } else {
                             $entity = $entityDAO->insert($entity);
                             if (!$entity) {
+                                if($isTransaction){
+                                    $entityDAO->rollback();
+                                }
                                 return 2;
                             }
                         }
@@ -370,6 +389,10 @@ class Validator
                     }
                 }
             }
+            $entityValues=[];
+        }
+        if($isTransaction){
+            $entityDAO->commit();
         }
         $this->entities = $entities;
         return true;
