@@ -493,6 +493,8 @@ class Validator
     public static function validateFiles($files, $validExtensions, $entityClass, $isImage, $imgSize)
     {
         $result=[];
+        $msgError="";
+        $entityMultipleFiles=[];
         foreach ($files as $count => $file) {
             $isValid = self::validateFile($file, $validExtensions);
             if ($isValid !== true) {
