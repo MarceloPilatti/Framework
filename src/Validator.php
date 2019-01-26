@@ -33,7 +33,7 @@ class Validator
         $formData = $this->formData;
         $fKEntityId = null;
         $entityMultipleFiles = [];
-        $multipleFile=false;
+        $file=false;
         $many=false;
         $entityForeignKeys=[];
         $entities=[];
@@ -104,10 +104,10 @@ class Validator
                                 }
                                 $entityValues[$ruleKey] = $data;
                             } else if ($ruleValue === 'many') {
-                                $ids = $data;
+                                $fKValues = $data;
                                 $many = true;
-                                foreach ($ids as $count => $id) {
-                                    $entityForeignKeys[$count][$ruleKey] = $id;
+                                foreach ($fKValues as $count => $fKValue) {
+                                    $entityForeignKeys[$count][$ruleKey] = $fKValue;
                                 }
                                 $entityValues[$ruleKey] = null;
                             }
@@ -184,8 +184,10 @@ class Validator
                                 }
                                 break;
                             case RuleType::FILE:
+                                $file=true;
                                 $validExtensions = $entityRule["extensions"]??'';
-                                $multipleFile = $entityRule["multiple"]??0;
+                                $isImage = $entityRule["isImage"]??0;
+                                $imgSize = $entityRule["size"]??null;
                                 $files = $data;
                                 if(!$files){
                                     break;
@@ -193,79 +195,9 @@ class Validator
                                 if (!is_array($files)) {
                                     $files = [$files];
                                 }
-                                $filesCount=count($files);
-                                $file=null;
-                                if($filesCount == 1){
-                                    $file=$files[0];
-                                }
-                                if (($multipleFile==0 || $filesCount == 1) && ($file && !$file->getClientOriginalName() || $file->getClientOriginalName()=="") && $entityId && $entity->filePath) {
-                                    $entityValues['fileName'] = $entity->fileName;
-                                    $entityValues['filePath'] = $entity->filePath;
-                                    break;
-                                }
-
-                                foreach ($files as $count => $file) {
-                                    $isValid = Validator::validateFile($file, $validExtensions);
-                                    if ($isValid !== true) {
-                                        $msgError .= $isValid;
-                                    }
-                                    $fileOriginalName = $file->getClientOriginalName();
-                                    $tempName = $file->getPathname();
-                                    $fullDestPath = './data/uploads/' . $entityClass . '/';
-                                    if (!is_dir($fullDestPath)) {
-                                        mkdir($fullDestPath, 0777, true);
-                                    }
-                                    $isImage = $entityRule["isImage"]??0;
-                                    if ($isImage == 1) {
-                                        $fullDestThumbPath = $fullDestPath . 'thumb/';
-                                        if (!is_dir($fullDestThumbPath)) {
-                                            mkdir($fullDestThumbPath, 0777, true);
-                                        }
-                                    }
-                                    $filePath = $fullDestPath;
-                                    $fileExtension = pathinfo($fileOriginalName, PATHINFO_EXTENSION);
-                                    $fileName = md5(uniqid(rand(), true) . time()) . '.' . $fileExtension;
-                                    $destFileName = $fullDestPath . $fileName;
-
-                                    $isImage = $entityRule["isImage"]??0;
-                                    if ($isImage == 1) {
-                                        $fullDestThumbPath = $fullDestPath . 'thumb/';
-                                        if (!is_dir($fullDestThumbPath)) {
-                                            mkdir($fullDestThumbPath, 0777, true);
-                                        }
-                                        $destThumbName = $fullDestThumbPath . $fileName;
-                                        $imgSize = $entityRule["size"]??null;
-                                        $img = Image::make($tempName);
-                                        if ($imgSize) {
-                                            $imgSize = explode('x', $imgSize);
-                                            $width = $imgSize[0];
-                                            $height = $imgSize[1];
-                                            $img->fit($width, $height);
-                                        }
-                                        $img = $img->save($destFileName, 75);
-                                        if (!$img) {
-                                            $msgError .= 'Erro ao salvar a imagem.<br />';
-                                        }
-                                        $img = Image::make($tempName)->fit(150, 150)->save($destThumbName, 70);
-                                        if (!$img) {
-                                            $msgError .= 'Erro ao salvar a miniatura.<br />';
-                                        }
-                                    } else {
-                                        move_uploaded_file($tempName, $destFileName);
-                                    }
-                                    if ($multipleFile) {
-                                        $entityMultipleFiles[$count]['fileOriginalName'] = $fileOriginalName;
-                                        $entityMultipleFiles[$count]['fileName'] = $fileName;
-                                        $entityMultipleFiles[$count]['filePath'] = $filePath;
-                                        $entityValues['fileOriginalName'] = null;
-                                        $entityValues['fileName'] = null;
-                                        $entityValues['filePath'] = null;
-                                    } else {
-                                        $entityValues['fileOriginalName'] = $fileOriginalName;
-                                        $entityValues['fileName'] = $fileName;
-                                        $entityValues['filePath'] = $fullDestPath;
-                                    }
-                                }
+                                $filesValidated=self::validateFiles($files, $validExtensions, $entityClass, $isImage, $imgSize);
+                                $entityMultipleFiles=$filesValidated["data"];
+                                $msgError.=$filesValidated["msgError"];
                                 break;
                             case RuleType::CPF:
                                 $data = trim($data);
@@ -321,27 +253,39 @@ class Validator
             } else {
                 $session->set('errors', null);
                 $session->set('inputs', null);
-                if ($multipleFile) {
+                if ($file) {
                     unset($entityValues['file']);
                     $entities = [];
-                    $entity = new $entityName;
                     if ($entityMultipleFiles) {
                         foreach ($entityMultipleFiles as $countFile => $entityMultipleFile) {
+                            if(!$entityId) {
+                                $entity = new $entityName;
+                            }
                             $entityValues['fileOriginalName'] = $entityMultipleFile['fileOriginalName'];
                             $entityValues['fileName'] = $entityMultipleFile['fileName'];
                             $entityValues['filePath'] = $entityMultipleFile['filePath'];
                             $entity->setAttrs($entityValues);
-                            $entity = $entityDAO->insert($entity);
-                            if (!$entity) {
-                                if($isTransaction){
-                                    $entityDAO->rollback();
+                            if($entityId){
+                                $updated = $entityDAO->update($entity);
+                                if (!$updated) {
+                                    if($isTransaction){
+                                        $entityDAO->rollback();
+                                    }
+                                    return 2;
                                 }
-                                return 2;
+                            }else{
+                                $entity = $entityDAO->insert($entity);
+                                if (!$entity) {
+                                    if($isTransaction){
+                                        $entityDAO->rollback();
+                                    }
+                                    return 2;
+                                }
                             }
                             $entities[$entityClass][$countFile] = $entity;
                         }
                         $fKEntityId=$entity->id;
-                        $multipleFile=false;
+                        $file=false;
                     }
                 } else {
                     if ($many) {
@@ -543,6 +487,64 @@ class Validator
         }
         $result['data'] = $data;
         $result['msgError'] = $msgError;
+        return $result;
+    }
+
+    public static function validateFiles($files, $validExtensions, $entityClass, $isImage, $imgSize)
+    {
+        $result=[];
+        foreach ($files as $count => $file) {
+            $isValid = self::validateFile($file, $validExtensions);
+            if ($isValid !== true) {
+                $msgError .= $isValid;
+            }
+            $fileOriginalName = $file->getClientOriginalName();
+            $tempName = $file->getPathname();
+            $fullDestPath = './data/uploads/' . $entityClass . '/';
+            if (!is_dir($fullDestPath)) {
+                mkdir($fullDestPath, 0777, true);
+            }
+            if ($isImage == 1) {
+                $fullDestThumbPath = $fullDestPath . 'thumb/';
+                if (!is_dir($fullDestThumbPath)) {
+                    mkdir($fullDestThumbPath, 0777, true);
+                }
+            }
+            $filePath = $fullDestPath;
+            $fileExtension = pathinfo($fileOriginalName, PATHINFO_EXTENSION);
+            $fileName = md5(uniqid(rand(), true) . time()) . '.' . $fileExtension;
+            $destFileName = $fullDestPath . $fileName;
+
+            if ($isImage == 1) {
+                $fullDestThumbPath = $fullDestPath . 'thumb/';
+                if (!is_dir($fullDestThumbPath)) {
+                    mkdir($fullDestThumbPath, 0777, true);
+                }
+                $destThumbName = $fullDestThumbPath . $fileName;
+                $img = Image::make($tempName);
+                if ($imgSize) {
+                    $imgSize = explode('x', $imgSize);
+                    $width = $imgSize[0];
+                    $height = $imgSize[1];
+                    $img->fit($width, $height);
+                }
+                $img = $img->save($destFileName, 75);
+                if (!$img) {
+                    $msgError .= 'Erro ao salvar a imagem.<br />';
+                }
+                $img = Image::make($tempName)->fit(150, 150)->save($destThumbName, 70);
+                if (!$img) {
+                    $msgError .= 'Erro ao salvar a miniatura.<br />';
+                }
+            } else {
+                move_uploaded_file($tempName, $destFileName);
+            }
+            $entityMultipleFiles[$count]['fileOriginalName'] = $fileOriginalName;
+            $entityMultipleFiles[$count]['fileName'] = $fileName;
+            $entityMultipleFiles[$count]['filePath'] = $filePath;
+        }
+        $result["data"]=$entityMultipleFiles;
+        $result["msgError"]=$msgError;
         return $result;
     }
 
