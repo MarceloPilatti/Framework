@@ -37,9 +37,8 @@ class Validator
         $many=false;
         $entityForeignKeys=[];
         $entities=[];
-        if (!is_array($entityRulesArray)) {
-            $entityRulesArray = [$entityRulesArray];
-        }
+        $fileToDelete="";
+        $thumbToDelete="";
         $entityValues = [];
         $isTransaction=false;
         foreach ($entityRulesArray as $count => $entityRuleArray) {
@@ -136,11 +135,6 @@ class Validator
                                 $entityValues[$ruleKey] = $data;
                                 break;
                             case RuleType::HTML:
-                                if (array_search("required", $rulesArray) !== false) {
-                                    if (!$data || $data === '<p>&nbsp;</p>') {
-                                        $msgError .= "Este campo é obrigatório.<br />";
-                                    }
-                                }
                                 $entityValues[$ruleKey] = htmlentities($data);
                                 break;
                             case RuleType::DATETIME:
@@ -184,6 +178,10 @@ class Validator
                                 }
                                 break;
                             case RuleType::FILE:
+                                if($entityId){
+                                    $fileToDelete=$entity->filePath.$entity->fileName;
+                                    $thumbToDelete=$entity->filePath . 'thumb/' . $entity->fileName;
+                                }
                                 $file=true;
                                 $validExtensions = $entityRule["extensions"]??'';
                                 $isImage = $entityRule["isImage"]??0;
@@ -222,18 +220,9 @@ class Validator
                                 if(!$url){
                                     break;
                                 }
-                                $path = parse_url($url, PHP_URL_PATH);
-                                $encoded_path = array_map('urlencode', explode('/', $path));
-                                $url = str_replace($path, implode('/', $encoded_path), $url);
-                                $filteredUrl=Filter::filterUrl($url);
-                                if($filteredUrl===false){
-                                    $msgError .= "Link inválido.<br />";
-                                }
-                                $validatedUrl = filter_var($url, FILTER_VALIDATE_URL);
-                                if($validatedUrl===false){
-                                    $msgError .= "Link inválido.<br />";
-                                }
-                                $entityValues[$ruleKey] = $url;
+                                $urlValidated=self::validateUrl($url);
+                                $entityValues[$ruleKey] = $urlValidated["data"];
+                                $msgError.=$urlValidated["msgError"];
                                 break;
                         }
                     }
@@ -267,6 +256,14 @@ class Validator
                             $entity->setAttrs($entityValues);
                             if($entityId){
                                 $updated = $entityDAO->update($entity);
+                                $fileDeleted=unlink($fileToDelete);
+                                $thumbDeleted=unlink($thumbToDelete);
+                                if(!$thumbDeleted || !$fileDeleted){
+                                    if($isTransaction){
+                                        $entityDAO->rollback();
+                                    }
+                                    return 2;
+                                }
                                 if (!$updated) {
                                     if($isTransaction){
                                         $entityDAO->rollback();
@@ -340,9 +337,9 @@ class Validator
                 }
             }
             $entityValues=[];
-        }
-        if($isTransaction){
-            $entityDAO->commit();
+            if($isTransaction){
+                $entityDAO->commit();
+            }
         }
         $this->entities = $entities;
         return true;
@@ -365,6 +362,26 @@ class Validator
             }
         }
         return $msgError;
+    }
+
+    public static function validateUrl($url)
+    {
+        $msgError="";
+        $result=[];
+        $path = parse_url($url, PHP_URL_PATH);
+        $encoded_path = array_map('urlencode', explode('/', $path));
+        $url = str_replace($path, implode('/', $encoded_path), $url);
+        $filteredUrl=Filter::filterUrl($url);
+        if($filteredUrl===false){
+            $msgError .= "Link inválido.<br />";
+        }
+        $validatedUrl = filter_var($url, FILTER_VALIDATE_URL);
+        if($validatedUrl===false){
+            $msgError .= "Link inválido.<br />";
+        }
+        $result["data"]=$url;
+        $result["msgError"]=$msgError;
+        return $result;
     }
 
     public static function validateSpecialChars($data, $ruleValue)
@@ -398,7 +415,7 @@ class Validator
     public static function validateEmpty($data)
     {
         $msgError = '';
-        if ($data == '' && $data==null) {
+        if ($data == '' || $data==null || $data === '<p>&nbsp;</p>') {
             $msgError .= "Este campo é obrigatório.<br />";
         }
         return $msgError;
@@ -526,8 +543,7 @@ class Validator
                 $img = Image::make($tempName);
                 if ($imgSize) {
                     $imgSize = explode('x', $imgSize);
-                    $width = $imgSize[0];
-                    $height = $imgSize[1];
+                    list($width, $height)=$imgSize;
                     $img->fit($width, $height);
                 }
                 $img = $img->save($destFileName, 75);
@@ -553,10 +569,10 @@ class Validator
     public static function validateFile($file, $validExtensions)
     {
         try {
-            $error = null;
             $fileName = $file->getClientOriginalName();
             $tempName = $file->getPathname();
             $fileSize = $file->getSize();
+            $error = $file->getError();
             $fileExtension = pathinfo($fileName, PATHINFO_EXTENSION);
             if(!$validExtensions){
                 $msg = "A extensão do arquivo " . $fileName . " é inválida.";
@@ -581,7 +597,7 @@ class Validator
                         $msg = 'Nenhum arquivo foi enviado.';
                         break;
                     case UPLOAD_ERR_NO_TMP_DIR:
-                        $msg = 'Pasta temporária ausênte.';
+                        $msg = 'Pasta temporária ausente.';
                         break;
                     case UPLOAD_ERR_CANT_WRITE:
                         $msg = 'Falha em escrever o arquivo em disco.';

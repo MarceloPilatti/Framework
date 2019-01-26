@@ -26,21 +26,21 @@ class View
 
         if (isset($params)) {
             foreach ($params as $key => $value) {
-                $this->$key = $value;
+                @$this->$key = $value;
             }
         }
         $session = new Session();
         if ($session->has('errors')) {
             $errors = $session->get('errors');
             foreach ($errors as $key => $error) {
-                $this->{$key . 'Error'} = "<label class='text-danger'>" . $error . "</label>";
+                @$this->{$key . 'Error'} = "<label class='text-danger'>" . $error . "</label>";
             }
             $session->remove('errors');
         }
         if ($session->has('inputs')) {
             $inputs = $session->get('inputs');
             foreach ($inputs as $key => $input) {
-                $this->{$key . 'Input'} = $input;
+                @$this->{$key . 'Input'} = $input;
             }
             $session->remove('inputs');
         }
@@ -57,10 +57,10 @@ class View
                 $flashDivs .= '</ul></div>';
             }
         }
-        $this->flashMessages = $flashDivs;
-        $this->version = $session->get('version');
-        $this->min = $session->get('min');
-        $this->csrf_token = "<input type='hidden' name='csrf_token' value='" . CSRF::generateFormToken() . "' />";
+        @$this->flashMessages = $flashDivs;
+        @$this->version = $session->get('version');
+        @$this->min = $session->get('min');
+        @$this->csrf_token = "<input type='hidden' name='csrf_token' value='" . CSRF::generateFormToken() . "' />";
     }
 
     public function render()

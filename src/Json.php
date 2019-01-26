@@ -48,9 +48,4 @@ class Json
     {
         return new Response(json_encode($this->params));
     }
-
-    public function decode()
-    {
-        return new Response(json_decode($this->params));
-    }
 }

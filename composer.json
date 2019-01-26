@@ -5,9 +5,13 @@
   "minimum-stability": "stable",
   "require" : {
     "php" : "^7.2",
+    "intervention/image": "^2.4",
     "symfony/http-foundation": "^4.2",
     "symfony/http-kernel": "^4.2",
-    "symfony/routing": "^4.2"
+    "symfony/routing": "^4.2",
+    "ext-gd": "*",
+    "ext-json": "*",
+    "ext-pdo": "*"
   },
   "autoload" : {
     "psr-4" : {
