@@ -261,8 +261,8 @@ class Validator
                             $entity->setAttrs($entityValues);
                             if($entityId){
                                 $updated = $entityDAO->update($entity);
-                                $fileDeleted=unlink($fileToDelete);
-                                $thumbDeleted=unlink($thumbToDelete);
+                                unlink($fileToDelete);
+                                unlink($thumbToDelete);
                                 if (!$updated) {
                                     if($isTransaction){
                                         $entityDAO->rollback();
