@@ -39,6 +39,7 @@ class Validator
         $fileToDelete="";
         $thumbToDelete="";
         $entityValues = [];
+        $entityForeignKeys=[];
         $isTransaction=false;
         foreach ($entityRulesArray as $count => $entityRuleArray) {
             $entityId=$entityIds[$count];
@@ -287,11 +288,6 @@ class Validator
                     if ($many) {
                         $entities = [];
                         if ($entityForeignKeys) {
-                            $allDeleted=$entityDAO->deleteAll();
-                            if(!$allDeleted){
-                                $entityDAO->rollback();
-                                return 2;
-                            }
                             $count = 0;
                             foreach ($entityForeignKeys as $eFK) {
                                 foreach ($eFK as $key=>$entityForeignKey) {
