@@ -31,11 +31,10 @@ class Validator
         $entityNamesArray = $this->entityNames;
         $entityIds = $this->entityIds;
         $formData = $this->formData;
-        $fKEntityId = null;
+        $lastInsertedIds = [];
         $entityMultipleFiles = [];
         $file=false;
         $many=false;
-        $entityForeignKeys=[];
         $entities=[];
         $fileToDelete="";
         $thumbToDelete="";
@@ -66,7 +65,7 @@ class Validator
                 } else {
                     $rulesArray = [$rules];
                 }
-                if (!array_key_exists($ruleKey, $formData) && !$fKEntityId) {
+                if (!array_key_exists($ruleKey, $formData) && !$lastInsertedIds) {
                     $isDefault = false;
                     foreach ($rulesArray as $rule) {
                         $isDefault = strpos($rule, (RuleType::DEFAULT)) !== false || strpos($rule, RuleType::DATE) !== false || strpos($rule, RuleType::DATETIME) !== false && !$entityId;
@@ -99,14 +98,20 @@ class Validator
                         } else if ($ruleDesc === RuleType::FOREIGN_KEY) {
                             if ($ruleValue === 'one') {
                                 if (!$data) {
-                                    $data = $fKEntityId;
+                                    $data = $lastInsertedIds[$ruleKey][0];
                                 }
                                 $entityValues[$ruleKey] = $data;
                             } else if ($ruleValue === 'many') {
-                                $fKValues = $data;
+                                if(array_key_exists($ruleKey, $lastInsertedIds)){
+                                    $fKValues=$lastInsertedIds[$ruleKey];
+                                }else{
+                                    $fKValues = $data;
+                                }
                                 $many = true;
-                                foreach ($fKValues as $count => $fKValue) {
-                                    $entityForeignKeys[$count][$ruleKey] = $fKValue;
+                                if($fKValues) {
+                                    foreach ($fKValues as $count => $fKValue) {
+                                        $entityForeignKeys[$count][$ruleKey] = $fKValue;
+                                    }
                                 }
                                 $entityValues[$ruleKey] = null;
                             }
@@ -258,12 +263,6 @@ class Validator
                                 $updated = $entityDAO->update($entity);
                                 $fileDeleted=unlink($fileToDelete);
                                 $thumbDeleted=unlink($thumbToDelete);
-                                if(!$thumbDeleted || !$fileDeleted){
-                                    if($isTransaction){
-                                        $entityDAO->rollback();
-                                    }
-                                    return 2;
-                                }
                                 if (!$updated) {
                                     if($isTransaction){
                                         $entityDAO->rollback();
@@ -280,8 +279,8 @@ class Validator
                                 }
                             }
                             $entities[$entityClass][$countFile] = $entity;
+                            $lastInsertedIds[$entityClass."Id"][$countFile]=$entity->id;
                         }
-                        $fKEntityId=$entity->id;
                         $file=false;
                     }
                 } else {
@@ -306,9 +305,10 @@ class Validator
                                     }
                                     return 2;
                                 }
-                                $entities[$entityClass][$count] = $entity;
+                                $entities[$entityClass.'Id'][$count] = $entity;
                                 $count++;
                             }
+                            $entityForeignKeys=[];
                         }
                         $many=false;
                     } else {
@@ -331,7 +331,7 @@ class Validator
                             }
                         }
                         $entityId = null;
-                        $fKEntityId = $entity->id;
+                        $lastInsertedIds[$entityClass.'Id']=$entity->id;
                         $entities[$entityClass] = $entity;
                     }
                 }
