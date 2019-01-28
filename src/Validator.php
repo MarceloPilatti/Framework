@@ -87,13 +87,13 @@ class Validator
                         $ruleDesc = $ruleInfo[0];
                         $ruleValue = $ruleInfo[1];
                         if ($ruleDesc === RuleType::MIN) {
-                            $msgError .= Validator::validateMaxMin($data, $ruleValue, RuleType::MIN);
+                            $msgError .= self::validateMaxMin($data, $ruleValue, RuleType::MIN);
                         } else if ($ruleDesc === RuleType::MAX) {
-                            $msgError .= Validator::validateMaxMin($data, $ruleValue, RuleType::MAX);
+                            $msgError .= self::validateMaxMin($data, $ruleValue, RuleType::MAX);
                         } else if ($ruleDesc === RuleType::DEFAULT) {
                             $entityValues[$ruleKey] = $ruleValue;
                         } else if ($ruleDesc === RuleType::NORMAL_CHARS) {
-                            $specialCharsValidated = Validator::validateSpecialChars($data, $ruleValue);
+                            $specialCharsValidated = self::validateSpecialChars($data, $ruleValue);
                             $msgError .= $specialCharsValidated['msgError'];
                             $entityValues[$ruleKey] = $specialCharsValidated['data'];
                         } else if ($ruleDesc === RuleType::FOREIGN_KEY) {
@@ -114,36 +114,36 @@ class Validator
                     } else {
                         switch ($rule) {
                             case RuleType::REQUIRED:
-                                $msgError .= Validator::validateEmpty($data);
+                                $msgError .= self::validateEmpty($data);
                                 break;
                             case RuleType::UNIQUE:
-                                $msgError .= Validator::validateUnique($data, $entityDAO, $entityId, $ruleKey);
+                                $msgError .= self::validateUnique($data, $entityDAO, $entityId, $ruleKey);
                                 break;
                             case RuleType::FLOAT:
-                                $isFloatValidated = Validator::validateFloat($data);
+                                $isFloatValidated = self::validateFloat($data);
                                 $msgError .= $isFloatValidated['msgError'];
                                 $entityValues[$ruleKey] = $isFloatValidated['data'];
                                 break;
                             case RuleType::INT:
-                                $isIntValidated = Validator::validateInt($data);
+                                $isIntValidated = self::validateInt($data);
                                 $msgError .= $isIntValidated['msgError'];
                                 $entityValues[$ruleKey] = $isIntValidated['data'];
                                 break;
                             case RuleType::EMAIL:
                                 $data = trim($data);
-                                $msgError .= Validator::validateEmail($data);
+                                $msgError .= self::validateEmail($data);
                                 $entityValues[$ruleKey] = $data;
                                 break;
                             case RuleType::HTML:
                                 $entityValues[$ruleKey] = htmlentities($data);
                                 break;
                             case RuleType::DATETIME:
-                                $dateValidated = Validator::validateDate($data, RuleType::DATETIME);
+                                $dateValidated = self::validateDate($data, RuleType::DATETIME);
                                 $msgError .= $dateValidated['msgError'];
                                 $entityValues[$ruleKey] = $dateValidated['data'];
                                 break;
                             case RuleType::DATE:
-                                $dateValidated = Validator::validateDate($data, RuleType::DATE);
+                                $dateValidated = self::validateDate($data, RuleType::DATE);
                                 $msgError .= $dateValidated['msgError'];
                                 $entityValues[$ruleKey] = $dateValidated['data'];
                                 break;
@@ -336,10 +336,10 @@ class Validator
                     }
                 }
             }
-            $entityValues=[];
-            if($isTransaction){
-                $entityDAO->commit();
-            }
+        }
+        $entityValues=[];
+        if($isTransaction){
+            $entityDAO->commit();
         }
         $this->entities = $entities;
         return true;
