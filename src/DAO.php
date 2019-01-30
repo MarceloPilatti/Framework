@@ -480,7 +480,7 @@ abstract class DAO
         }
     }
 
-    public function listAll($limit = null, $offset = null, $count = false, $returnEntity = true)
+    public function listAll($limit = null, $offset = null, $orderBy=null, $count = false, $returnEntity = true)
     {
         try {
             $tableName = $this->tableName;
@@ -489,7 +489,13 @@ abstract class DAO
                 $sql = 'SELECT COUNT(*)';
             }
             $sql .= ' FROM ' . $tableName;
-            if ($offset || $limit) {
+            if($orderBy){
+                $sql .= ' ORDER BY ';
+                foreach ($orderBy as $key => $value) {
+                    $columnName = strtoupper(preg_replace('/(?<=\\w)(?=[A-Z])/', "_$1", $key));
+                    $sql .= $columnName . ' ' . $value;
+                }
+            } else if ($offset || $limit) {
                 $sql .= " ORDER BY ID LIMIT " . $limit . " OFFSET " . $offset;
             }
             $stmt = $this->dBConnection->query($sql);
