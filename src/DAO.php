@@ -402,16 +402,7 @@ abstract class DAO
     public function delete($id)
     {
         try {
-            $columnNames = $this->getColumnNames();
-            $idColumn = reset($columnNames);
-            $tableName = $this->tableName;
-            $sql = "DELETE FROM " . $tableName . " WHERE " . $idColumn . " = ?";
-            $stmt = $this->dBConnection->prepare($sql);
-            if (!$stmt) {
-                return false;
-            }
-            $stmt = $this->setParams($id, $stmt);
-            return $this->executeSql($stmt, false);
+            return $this->deleteBy(['id'=>$id]);
         } catch (\Throwable $t) {
             Logger::log($t->getFile() . " (" . $t->getLine() . ") Erro ao remover um registro do banco: " . $t->getMessage());
             return null;
