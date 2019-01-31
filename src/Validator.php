@@ -288,6 +288,11 @@ class Validator
                     if ($many) {
                         $entities = [];
                         if ($entityForeignKeys) {
+                            $allDeleted=$entityDAO->deleteAll();
+                            if(!$allDeleted){
+                                $entityDAO->rollback();
+                                return 2;
+                            }
                             $count = 0;
                             foreach ($entityForeignKeys as $eFK) {
                                 foreach ($eFK as $key=>$entityForeignKey) {
@@ -332,8 +337,8 @@ class Validator
                     }
                 }
             }
+            $entityValues=[];
         }
-        $entityValues=[];
         if($isTransaction){
             $entityDAO->commit();
         }
