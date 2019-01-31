@@ -41,6 +41,7 @@ class Validator
         $entityValues = [];
         $entityForeignKeys=[];
         $isTransaction=false;
+        $fKOneName="";
         foreach ($entityRulesArray as $count => $entityRuleArray) {
             $entityId=$entityIds[$count];
             $entityName = $entityNamesArray[$count];
@@ -101,6 +102,7 @@ class Validator
                                 if (!$data) {
                                     $data = $lastInsertedIds[$ruleKey][0];
                                 }
+                                $fKOneName=$ruleKey;
                                 $entityValues[$ruleKey] = $data;
                             } else if ($ruleValue === 'many') {
                                 if(array_key_exists($ruleKey, $lastInsertedIds)){
@@ -288,10 +290,13 @@ class Validator
                     if ($many) {
                         $entities = [];
                         if ($entityForeignKeys) {
-                            $allDeleted=$entityDAO->deleteAll();
-                            if(!$allDeleted){
-                                $entityDAO->rollback();
-                                return 2;
+                            if($fKOneName) {
+                                $fKOneId = $lastInsertedIds[$fKOneName];
+                                $allDeleted = $entityDAO->deleteBy([$fKOneName => $fKOneId]);
+                                if (!$allDeleted) {
+                                    $entityDAO->rollback();
+                                    return 2;
+                                }
                             }
                             $count = 0;
                             foreach ($entityForeignKeys as $eFK) {
@@ -312,6 +317,7 @@ class Validator
                             $entityForeignKeys=[];
                         }
                         $many=false;
+                        $fKOneName="";
                     } else {
                         $entity->setAttrs($entityValues);
                         if ($entityId) {
