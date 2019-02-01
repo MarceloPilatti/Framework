@@ -67,18 +67,18 @@ class Validator
                 } else {
                     $rulesArray = [$rules];
                 }
-                if (!array_key_exists($ruleKey, $formData) && !$lastInsertedIds) {
-                    $isDefault = false;
-                    foreach ($rulesArray as $rule) {
-                        $isDefault = strpos($rule, (RuleType::DEFAULT)) !== false || strpos($rule, RuleType::DATE) !== false || strpos($rule, RuleType::DATETIME) !== false && !$entityId;
-                        if ($isDefault) {
-                            break;
-                        }
-                    }
-                    if (!$isDefault) {
-                        continue;
-                    }
-                }
+//                if (!array_key_exists($ruleKey, $formData) && !$lastInsertedIds) {
+//                    $isDefault = false;
+//                    foreach ($rulesArray as $rule) {
+//                        $isDefault = strpos($rule, (RuleType::DEFAULT)) !== false || strpos($rule, RuleType::DATE) !== false || strpos($rule, RuleType::DATETIME) !== false && !$entityId;
+//                        if ($isDefault) {
+//                            break;
+//                        }
+//                    }
+//                    if (!$isDefault) {
+//                        continue;
+//                    }
+//                }
                 $data = $formData[$ruleKey];
                 $msgError = "";
                 $entityValues[$ruleKey] = $data;
