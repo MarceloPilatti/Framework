@@ -205,7 +205,7 @@ abstract class DAO
             }
             $sql .= " FROM $tableName WHERE ";
             foreach ($criteria as $columnName => $columnValue) {
-                if (!empty($columnName)) {
+                if (!is_numeric($columnName)) {
                     $columnName = strtoupper(preg_replace('/(?<=\\w)(?=[A-Z])/', "_$1", $columnName));
                     $sql .= $columnName . '=?';
                     array_push($params, $columnValue);
@@ -416,7 +416,7 @@ abstract class DAO
             $params = [];
             $sql = "DELETE FROM $tableName WHERE ";
             foreach ($criteria as $columnName => $columnValue) {
-                if (!empty($columnName)) {
+                if (!is_numeric($columnName)) {
                     $columnName = strtoupper(preg_replace('/(?<=\\w)(?=[A-Z])/', "_$1", $columnName));
                     $sql .= $columnName . '=?';
                     array_push($params, $columnValue);
