@@ -25,4 +25,5 @@ abstract class RuleType
     const MONEY = 'money';
     const NORMAL_CHARS = 'normal-chars';
     const URL = 'url';
+    const SLUG = 'slug';
 }

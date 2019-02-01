@@ -93,6 +93,10 @@ class Validator
                             $msgError .= self::validateMaxMin($data, $ruleValue, RuleType::MAX);
                         } else if ($ruleDesc === RuleType::DEFAULT) {
                             $entityValues[$ruleKey] = $ruleValue;
+                        } else if ($ruleDesc === RuleType::SLUG) {
+                            $stringToSlugify=$formData[$ruleValue];
+                            $slug=Slugify::get($stringToSlugify);
+                            $entityValues[$ruleKey] = $slug;
                         } else if ($ruleDesc === RuleType::NORMAL_CHARS) {
                             $specialCharsValidated = self::validateSpecialChars($data, $ruleValue);
                             $msgError .= $specialCharsValidated['msgError'];
