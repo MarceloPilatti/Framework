@@ -284,7 +284,21 @@ abstract class DAO
                     $reflectionObject = new \ReflectionObject($entity);
                     $objectProperties = $reflectionObject->getProperties();
                     $count = 0;
-                    foreach ($row as $cell) {
+                    foreach ($row as $key=>$cell) {
+                        $name = lcfirst(str_replace('_', '', ucwords(strtolower($key), '_')));
+                        $isFk = substr($name, -2) == 'Id';
+                        if ($isFk) {
+                            $name = substr($name, 0, strpos($name, 'Id'));
+                            $tableName = ucfirst($name);
+                            $tableNameTemp = $this->tableName;
+                            $entityTemp = $this->entity;
+
+                            $fKEntityDAOName= "Main\\DAO\\".$tableName."DAO";
+                            $fKEntityDAO=new $fKEntityDAOName;
+                            $cell=$fKEntityDAO->getById($cell);
+                            $this->tableName=$tableNameTemp;
+                            $this->entity=$entityTemp;
+                        }
                         $objectProperties[$count]->setAccessible(true);
                         $objectProperties[$count]->setValue($entity, $cell);
                         $count++;
@@ -337,16 +351,12 @@ abstract class DAO
                     } else {
                         if ($d && $d->format($format) === $data) {
                             $value = $d->format('d/m/Y H:i:s');
+                        } else if ($data != $dataHtml) {
+                            $value = $dataHtml;
+                        } else if (is_numeric($data) && is_float($data + 0)) {
+                            $value = number_format($data, 2, ',', '.');
                         } else {
-                            if ($data != $dataHtml) {
-                                $value = $dataHtml;
-                            } else {
-                                if (is_numeric($data) && is_float($data + 0)) {
-                                    $value = number_format($data, 2, ',', '.');
-                                } else {
-                                    $value = $data;
-                                }
-                            }
+                            $value = $data;
                         }
                     }
                     $entityAttrs[$name] = $value;
