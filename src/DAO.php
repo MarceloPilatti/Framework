@@ -509,6 +509,56 @@ abstract class DAO
         }
     }
 
+    public function search($query, $criteria, $limit = null, $offset = null, $orderBy=null, $count = false, $returnEntity = true)
+    {
+        try {
+            $params=[];
+            $tableName = $this->tableName;
+            $sql = 'SELECT *';
+            if ($count) {
+                $sql = 'SELECT COUNT(*)';
+            }
+            $sql .= ' FROM ' . $tableName. ' WHERE ';
+            foreach ($criteria as $columnName => $columnValue) {
+                if (!is_numeric($columnName)) {
+                    $columnName = strtoupper(preg_replace('/(?<=\\w)(?=[A-Z])/', "_$1", $columnName));
+                    $sql .= $columnName . ' LIKE ?';
+                    array_push($params, '%'.$query.'%');
+                } else {
+                    $sql .= ' ' . $columnValue . ' ';
+                }
+            }
+            if($orderBy){
+                $sql .= ' ORDER BY ';
+                foreach ($orderBy as $key => $value) {
+                    $columnName = strtoupper(preg_replace('/(?<=\\w)(?=[A-Z])/', "_$1", $key));
+                    $sql .= $columnName . ' ' . $value;
+                }
+            } else if ($offset || $limit) {
+                $sql .= " ORDER BY ID LIMIT " . $limit . " OFFSET " . $offset;
+            }
+            $stmt = $this->dBConnection->prepare($sql);
+            if (!$stmt) {
+                return false;
+            }
+            $stmt = $this->setParams($params, $stmt);
+            $stmt->execute();
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            if (!$rows) {
+                return null;
+            }
+            $stmt->closeCursor();
+            if ($count) {
+                return reset($rows[0]);
+            }
+            $rows = $this->getData($rows, $returnEntity);
+            return $rows;
+        } catch (\Throwable $t) {
+            Logger::log($t->getFile() . " (" . $t->getLine() . ") Erro ao recuperar registros do banco: " . $t->getMessage());
+            return null;
+        }
+    }
+
     public function begin()
     {
         return $this->dBConnection->beginTransaction();
