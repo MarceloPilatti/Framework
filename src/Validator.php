@@ -9,15 +9,13 @@ use Symfony\Component\HttpFoundation\Session\Session;
 class Validator
 {
     private $formData;
-    private $entityRules;
     private $entityNames;
     private $entityIds;
     private $entities = [];
 
-    public function __construct($formData, $entityRules, $entityNames, $entityIds)
+    public function __construct($formData, $entityNames, $entityIds)
     {
         $this->formData = $formData;
-        $this->entityRules = $entityRules;
         $this->entityNames = $entityNames;
         $this->entityIds = $entityIds;
     }
@@ -27,7 +25,6 @@ class Validator
         $session = new Session();
         $errors = null;
         $inputs = null;
-        $entityRulesArray = $this->entityRules;
         $entityNamesArray = $this->entityNames;
         $entityIds = $this->entityIds;
         $formData = $this->formData;
@@ -42,9 +39,9 @@ class Validator
         $entityForeignKeys=[];
         $isTransaction=false;
         $fKOneName="";
-        foreach ($entityRulesArray as $count => $entityRuleArray) {
+        foreach ($entityNamesArray as $count => $entityName) {
+            $entityRuleArray = $entityName::rules();
             $entityId=$entityIds[$count];
-            $entityName = $entityNamesArray[$count];
             $entityClass = substr(strrchr($entityName, "\\"), 1);
             $entityDAOName = 'Main\\DAO\\' . $entityClass . 'DAO';
             $entityClass = strtolower($entityClass);
@@ -67,18 +64,6 @@ class Validator
                 } else {
                     $rulesArray = [$rules];
                 }
-//                if (!array_key_exists($ruleKey, $formData) && !$lastInsertedIds) {
-//                    $isDefault = false;
-//                    foreach ($rulesArray as $rule) {
-//                        $isDefault = strpos($rule, (RuleType::DEFAULT)) !== false || strpos($rule, RuleType::DATE) !== false || strpos($rule, RuleType::DATETIME) !== false && !$entityId;
-//                        if ($isDefault) {
-//                            break;
-//                        }
-//                    }
-//                    if (!$isDefault) {
-//                        continue;
-//                    }
-//                }
                 $data = $formData[$ruleKey];
                 $msgError = "";
                 $entityValues[$ruleKey] = $data;
