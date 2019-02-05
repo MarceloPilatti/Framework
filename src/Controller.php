@@ -42,6 +42,7 @@ abstract class Controller
     }
     public function getFormParameter(Request $request, $key)
     {
-        return @$this->getFormData($request)[$key];
+        $formData=$this->getFormData($request);
+        return array_key_exists($key, $formData)?$formData[$key]:"";
     }
 }
