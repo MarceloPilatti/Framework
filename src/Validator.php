@@ -46,7 +46,7 @@ class Validator
             $entityDAOName = 'Main\\DAO\\' . $entityClass . 'DAO';
             $entityClass = strtolower($entityClass);
             $entityDAO = new $entityDAOName;
-            if(count($entityRulesArray)>1 && $count==0){
+            if(count($entityNamesArray)>1 && $count==0){
                 $isTransaction=true;
                 $entityDAO->begin();
             }

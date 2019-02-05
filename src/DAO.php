@@ -285,20 +285,6 @@ abstract class DAO
                     $objectProperties = $reflectionObject->getProperties();
                     $count = 0;
                     foreach ($row as $key=>$cell) {
-                        $name = lcfirst(str_replace('_', '', ucwords(strtolower($key), '_')));
-                        $isFk = substr($name, -2) == 'Id';
-                        if ($isFk) {
-                            $name = substr($name, 0, strpos($name, 'Id'));
-                            $tableName = ucfirst($name);
-                            $tableNameTemp = $this->tableName;
-                            $entityTemp = $this->entity;
-
-                            $fKEntityDAOName= "Main\\DAO\\".$tableName."DAO";
-                            $fKEntityDAO=new $fKEntityDAOName;
-                            $cell=$fKEntityDAO->getById($cell);
-                            $this->tableName=$tableNameTemp;
-                            $this->entity=$entityTemp;
-                        }
                         $objectProperties[$count]->setAccessible(true);
                         $objectProperties[$count]->setValue($entity, $cell);
                         $count++;

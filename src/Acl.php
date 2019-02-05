@@ -2,16 +2,21 @@
 
 namespace Framework;
 
+use Main\DAO\RoleDAO;
+use Main\DAO\RolePrivilegeDAO;
+
 class Acl
 {
     private $roles;
     private $rolePrivileges;
     private $allowedList;
 
-    function __construct(array $roles, array $rolePrivileges)
+    function __construct()
     {
-        $this->roles = $roles;
-        $this->rolePrivileges = $rolePrivileges;
+        $roleDAO=new RoleDAO();
+        $rolePrivilegeDAO=new RolePrivilegeDAO();
+        $this->roles = $roleDAO->listAll();
+        $this->rolePrivileges = $rolePrivilegeDAO->listAll();
         $this->setAllow();
     }
 
@@ -23,8 +28,8 @@ class Acl
             $privileges = array();
             $this->allowedList[$count]["role"] = $role;
             foreach ($rolePrivileges as $rolePrivilege) {
-                if ($role->id == $rolePrivilege->role->id) {
-                    $privilege = $rolePrivilege->privilege;
+                if ($role->id == $rolePrivilege->roleId->id) {
+                    $privilege = $rolePrivilege->privilegeId;
                     array_push($privileges, $privilege);
                 }
             }
@@ -32,13 +37,13 @@ class Acl
         }
     }
 
-    public function isAllowed(Role $role, string $privilegeName): bool
+    public function isAllowed($roleId, string $privilegeName)
     {
         $allowedList = $this->allowedList;
         if (count($allowedList) > 0) {
             foreach ($allowedList as $allowed) {
                 $privileges = $allowed['privileges'];
-                if ($allowed['role']->id === $role->id) {
+                if ($allowed['role']->id === $roleId) {
                     foreach ($privileges as $privilege) {
                         if ($privilege->name === $privilegeName) {
                             return true;
