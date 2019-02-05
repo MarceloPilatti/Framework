@@ -45,4 +45,10 @@ abstract class Controller
         $formData=$this->getFormData($request);
         return array_key_exists($key, $formData)?$formData[$key]:"";
     }
+
+    public function isAdmin(Request $request){
+        $session=$request->getSession();
+        $user=$session->get("user");
+        return $user && $user->isAdmin?true:false;
+    }
 }

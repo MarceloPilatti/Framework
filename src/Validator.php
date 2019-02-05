@@ -64,6 +64,9 @@ class Validator
                 } else {
                     $rulesArray = [$rules];
                 }
+                if(!array_key_exists($ruleKey, $formData)){
+                    continue;
+                }
                 $data = $formData[$ruleKey];
                 $msgError = "";
                 $entityValues[$ruleKey] = $data;
@@ -273,8 +276,8 @@ class Validator
                             $entities[$entityClass][$countFile] = $entity;
                             $lastInsertedIds[$entityClass."Id"][$countFile]=$entity->id;
                         }
-                        $file=false;
                     }
+                    $file=false;
                 } else {
                     if ($many) {
                         $entities = [];
