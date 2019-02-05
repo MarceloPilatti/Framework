@@ -16,15 +16,6 @@ abstract class Setup
         $session = new Session();
         $request->setSession($session);
 
-        $maintenance = Config::getMaintenance();
-        $backTime = Config::getBackTime();
-
-        if ($maintenance == 1) {
-            $message = "<h1>Em manutenção!</h1><br /><h2>Este site encontra-se em manutenção. Previsão de volta: " . $backTime . ".</h2>";
-            $view = new View('error/error-page', ['message' => $message]);
-            return $view->render();
-        }
-
         $version = Config::getVersion();
         $updatedAt = Config::getUpdatedAt();
         $dBName = Config::getDBName();

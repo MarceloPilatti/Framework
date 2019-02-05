@@ -66,7 +66,7 @@ class View
     public function render()
     {
         ob_start();
-        require_once $this->layoutPath;
+        @require_once $this->layoutPath;
         $html = ob_get_clean();
         return new Response($html);
     }
@@ -74,7 +74,7 @@ class View
     public function content()
     {
         ob_start();
-        require_once $this->viewPath;
+        @require_once $this->viewPath;
         $html = ob_get_clean();
         echo $html;
     }
