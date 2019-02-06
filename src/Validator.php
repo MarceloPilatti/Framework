@@ -4,20 +4,19 @@ namespace Framework;
 
 use DateTime;
 use Intervention\Image\ImageManagerStatic as Image;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Session\Session;
 
 class Validator
 {
-    private $formData;
+    private $request;
     private $entityNames;
-    private $entityIds;
     private $entities = [];
 
-    public function __construct($formData, $entityNames, $entityIds)
+    public function __construct(Request $request, $entityNames)
     {
-        $this->formData = $formData;
+        $this->request = $request;
         $this->entityNames = $entityNames;
-        $this->entityIds = $entityIds;
     }
 
     public function validateForm()
@@ -27,7 +26,8 @@ class Validator
         $inputs = null;
         $entityNamesArray = $this->entityNames;
         $entityIds = $this->entityIds;
-        $formData = $this->formData;
+        $request = $this->request;
+        $formData=array_merge($request->query->all(), $request->files->all(), $request->attributes->all(), $request->request->all());
         $lastInsertedIds = [];
         $entityMultipleFiles = [];
         $file=false;
@@ -39,12 +39,14 @@ class Validator
         $entityForeignKeys=[];
         $isTransaction=false;
         $fKOneName="";
+        $exceptions=["date", "datetime", "default", "slug", "checkbox"];
         foreach ($entityNamesArray as $count => $entityName) {
             $entityRuleArray = $entityName::rules();
-            $entityId=$entityIds[$count];
             $entityClass = substr(strrchr($entityName, "\\"), 1);
             $entityDAOName = 'Main\\DAO\\' . $entityClass . 'DAO';
             $entityClass = strtolower($entityClass);
+            $entityClassId=$entityClass."Id";
+            $entityId=$formData[$entityClassId];
             $entityDAO = new $entityDAOName;
             if(count($entityNamesArray)>1 && $count==0){
                 $isTransaction=true;
@@ -59,12 +61,11 @@ class Validator
             }
             foreach ($entityRuleArray as $ruleKey => $entityRule) {
                 $rules = $entityRule["rules"];
+                $rulesArray = [$rules];
                 if (strpos($rules, "|") !== false) {
                     $rulesArray = explode("|", $rules);
-                } else {
-                    $rulesArray = [$rules];
                 }
-                if(!array_key_exists($ruleKey, $formData)){
+                if(!array_key_exists($ruleKey, $formData) && strpos($exceptions[0], $rules) === false && strpos($exceptions[1], $rules) === false && strpos($exceptions[2], $rules) === false && strpos($exceptions[3], $rules) === false && strpos($exceptions[4], $rules) === false){
                     continue;
                 }
                 $data = $formData[$ruleKey];
@@ -73,8 +74,7 @@ class Validator
                 foreach ($rulesArray as $rule) {
                     if (strpos($rule, ":") !== false) {
                         $ruleInfo = explode(":", $rule);
-                        $ruleDesc = $ruleInfo[0];
-                        $ruleValue = $ruleInfo[1];
+                        list($ruleDesc, $ruleValue)=$ruleInfo;
                         if ($ruleDesc === RuleType::MIN) {
                             $msgError .= self::validateMaxMin($data, $ruleValue, RuleType::MIN);
                         } else if ($ruleDesc === RuleType::MAX) {
@@ -125,6 +125,11 @@ class Validator
                                 $entityValues[$ruleKey] = $isFloatValidated['data'];
                                 break;
                             case RuleType::INT:
+                                $isIntValidated = self::validateInt($data);
+                                $msgError .= $isIntValidated['msgError'];
+                                $entityValues[$ruleKey] = $isIntValidated['data'];
+                                break;
+                            case RuleType::CHECKBOX:
                                 $isIntValidated = self::validateInt($data);
                                 $msgError .= $isIntValidated['msgError'];
                                 $entityValues[$ruleKey] = $isIntValidated['data'];

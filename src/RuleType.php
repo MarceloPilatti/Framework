@@ -26,4 +26,5 @@ abstract class RuleType
     const NORMAL_CHARS = 'normal-chars';
     const URL = 'url';
     const SLUG = 'slug';
+    const CHECKBOX = 'checkbox';
 }
