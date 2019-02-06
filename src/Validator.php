@@ -65,12 +65,11 @@ class Validator
                 if (strpos($rules, "|") !== false) {
                     $rulesArray = explode("|", $rules);
                 }
-                if(!array_key_exists($ruleKey, $formData) && strpos($exceptions[0], $rules) === false && strpos($exceptions[1], $rules) === false && strpos($exceptions[2], $rules) === false && strpos($exceptions[3], $rules) === false && strpos($exceptions[4], $rules) === false){
+                if(!array_key_exists($ruleKey, $formData) && self::checkExceptions($exceptions, $rules)===false){
                     continue;
                 }
                 $data = $formData[$ruleKey];
                 $msgError = "";
-                $entityValues[$ruleKey] = $data;
                 foreach ($rulesArray as $rule) {
                     if (strpos($rule, ":") !== false) {
                         $ruleInfo = explode(":", $rule);
@@ -115,6 +114,7 @@ class Validator
                         switch ($rule) {
                             case RuleType::REQUIRED:
                                 $msgError .= self::validateEmpty($data);
+                                $entityValues[$ruleKey] = $data;
                                 break;
                             case RuleType::UNIQUE:
                                 $msgError .= self::validateUnique($data, $entityDAO, $entityId, $ruleKey);
@@ -347,6 +347,15 @@ class Validator
         }
         $this->entities = $entities;
         return true;
+    }
+
+    public static function checkExceptions($exceptions, $rules){
+        foreach ($exceptions as $exception){
+            if(strpos($rules, $exception) !== false){
+                return true;
+            }
+        }
+        return false;
     }
 
     public static function validateMaxMin($data, $ruleValue, $ruleType)
