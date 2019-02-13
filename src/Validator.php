@@ -25,7 +25,6 @@ class Validator
         $errors = null;
         $inputs = null;
         $entityNamesArray = $this->entityNames;
-        $entityIds = $this->entityIds;
         $request = $this->request;
         $formData=array_merge($request->query->all(), $request->files->all(), $request->attributes->all(), $request->request->all());
         $lastInsertedIds = [];
@@ -39,12 +38,12 @@ class Validator
         $entityForeignKeys=[];
         $isTransaction=false;
         $fKOneName="";
-        $exceptions=["date", "datetime", "default", "slug", "checkbox"];
+        $exceptions=["date", "datetime", "default", "slug", "checkbox", "foreign-key:many"];
         foreach ($entityNamesArray as $count => $entityName) {
             $entityRuleArray = $entityName::rules();
             $entityClass = substr(strrchr($entityName, "\\"), 1);
             $entityDAOName = 'Main\\DAO\\' . $entityClass . 'DAO';
-            $entityClass = strtolower($entityClass);
+            $entityClass = lcfirst($entityClass);
             $entityClassId=$entityClass."Id";
             $entityId=$formData[$entityClassId];
             $entityDAO = new $entityDAOName;
