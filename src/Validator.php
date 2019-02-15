@@ -38,6 +38,7 @@ class Validator
         $entityForeignKeys=[];
         $isTransaction=false;
         $fKOneName="";
+        $prefixes=[];
         $exceptions=["date", "datetime", "default", "slug", "checkbox", "foreign-key:many"];
         foreach ($entityNamesArray as $count => $entityName) {
             $entityRuleArray = $entityName::rules();
@@ -182,9 +183,13 @@ class Validator
                                 }
                                 break;
                             case RuleType::FILE:
+                                $prefix = $entityRule["prefix"]??"";
+                                array_push($prefixes, $prefix);
                                 if($entityId){
-                                    $fileToDelete=$entity->filePath.$entity->fileName;
-                                    $thumbToDelete=$entity->filePath . 'thumb/' . $entity->fileName;
+                                    $fileNameIndex=$prefix?$prefix."FileName":"fileName";
+                                    $filePathIndex=$prefix?$prefix."FilePath":"filePath";
+                                    $fileToDelete=$entity->$filePathIndex.$entity->$fileNameIndex;
+                                    $thumbToDelete=$entity->$filePathIndex . 'thumb/' . $entity->$fileNameIndex;
                                 }
                                 $file=true;
                                 $validExtensions = $entityRule["extensions"]??'';
@@ -197,7 +202,7 @@ class Validator
                                 if (!is_array($files)) {
                                     $files = [$files];
                                 }
-                                $filesValidated=self::validateFiles($files, $validExtensions, $entityClass, $isImage, $imgSize);
+                                $filesValidated=self::validateFiles($files, $validExtensions, $entityClass, $isImage, $imgSize, $prefix, $entityMultipleFiles);
                                 $entityMultipleFiles=$filesValidated["data"];
                                 $msgError.=$filesValidated["msgError"];
                                 break;
@@ -251,12 +256,16 @@ class Validator
                     $entities = [];
                     if ($entityMultipleFiles) {
                         foreach ($entityMultipleFiles as $countFile => $entityMultipleFile) {
+                            $prefix=$prefixes[$countFile];
                             if(!$entityId) {
                                 $entity = new $entityName;
                             }
-                            $entityValues['fileOriginalName'] = $entityMultipleFile['fileOriginalName'];
-                            $entityValues['fileName'] = $entityMultipleFile['fileName'];
-                            $entityValues['filePath'] = $entityMultipleFile['filePath'];
+                            $originalNameIndex=$prefix?$prefix.'FileOriginalName':'fileOriginalName';
+                            $fileNameIndex=$prefix?$prefix.'FileName':'fileName';
+                            $filePathIndex=$prefix?$prefix.'FilePath':'filePath';
+                            $entityValues[$originalNameIndex] = $entityMultipleFile[$originalNameIndex];
+                            $entityValues[$fileNameIndex] = $entityMultipleFile[$fileNameIndex];
+                            $entityValues[$filePathIndex] = $entityMultipleFile[$filePathIndex];
                             $entity->setAttrs($entityValues);
                             if($entityId){
                                 $updated = $entityDAO->update($entity);
@@ -519,12 +528,12 @@ class Validator
         return $result;
     }
 
-    public static function validateFiles($files, $validExtensions, $entityClass, $isImage, $imgSize)
+    public static function validateFiles($files, $validExtensions, $entityClass, $isImage, $imgSize, $prefix,$entityMultipleFiles=[])
     {
         $result=[];
         $msgError="";
-        $entityMultipleFiles=[];
-        foreach ($files as $count => $file) {
+        $entityMultipleFilesCount=count($entityMultipleFiles);
+        foreach ($files as $file) {
             $isValid = self::validateFile($file, $validExtensions);
             if ($isValid !== true) {
                 $msgError .= $isValid;
@@ -569,9 +578,13 @@ class Validator
             } else {
                 move_uploaded_file($tempName, $destFileName);
             }
-            $entityMultipleFiles[$count]['fileOriginalName'] = $fileOriginalName;
-            $entityMultipleFiles[$count]['fileName'] = $fileName;
-            $entityMultipleFiles[$count]['filePath'] = $filePath;
+            $originalNameIndex=$prefix?$prefix.'FileOriginalName':'fileOriginalName';
+            $fileNameIndex=$prefix?$prefix.'FileName':'fileName';
+            $filePathIndex=$prefix?$prefix.'FilePath':'filePath';
+            $entityMultipleFiles[$entityMultipleFilesCount][$originalNameIndex] = $fileOriginalName;
+            $entityMultipleFiles[$entityMultipleFilesCount][$fileNameIndex] = $fileName;
+            $entityMultipleFiles[$entityMultipleFilesCount][$filePathIndex] = $filePath;
+            $entityMultipleFilesCount++;
         }
         $result["data"]=$entityMultipleFiles;
         $result["msgError"]=$msgError;
