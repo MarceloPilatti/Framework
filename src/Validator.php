@@ -37,8 +37,8 @@ class Validator
         $entityValues = [];
         $entityForeignKeys=[];
         $isTransaction=false;
-        $fKOneName="";
         $prefixes=[];
+        $fKOneName="";
         $exceptions=["date", "datetime", "default", "slug", "checkbox", "foreign-key:many"];
         foreach ($entityNamesArray as $count => $entityName) {
             $entityRuleArray = $entityName::rules();
