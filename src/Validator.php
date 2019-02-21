@@ -87,7 +87,6 @@ class Validator
                         } else if ($ruleDesc === RuleType::NORMAL_CHARS) {
                             $specialCharsValidated = self::validateSpecialChars($data, $ruleValue);
                             $msgError .= $specialCharsValidated['msgError'];
-                            $entityValues[$ruleKey] = $specialCharsValidated['data'];
                         }
                     } else {
                         switch ($rule) {
@@ -218,6 +217,7 @@ class Validator
                                 }
                                 $fKOneName = $ruleKey;
                                 $entityValues[$ruleKey] = $data;
+                                break;
                             case RuleType::FOREIGN_KEY_MANY:
                                 if(array_key_exists($ruleKey, $lastInsertedIds)){
                                     $fKValues=$lastInsertedIds[$ruleKey];
