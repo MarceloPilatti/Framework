@@ -39,7 +39,7 @@ class Validator
         $isTransaction=false;
         $prefixes=[];
         $fKOneName="";
-        $exceptions=["date", "datetime", "default", "slug", "checkbox", "foreign-key:many"];
+        $exceptions=[RuleType::DATE, RuleType::DATETIME, RuleType::DEFAULT, RuleType::SLUG, RuleType::CHECKBOX, RuleType::FOREIGN_KEY_MANY];
         foreach ($entityNamesArray as $count => $entityName) {
             $entityRuleArray = $entityName::rules();
             $entityClass = substr(strrchr($entityName, "\\"), 1);
@@ -88,35 +88,19 @@ class Validator
                             $specialCharsValidated = self::validateSpecialChars($data, $ruleValue);
                             $msgError .= $specialCharsValidated['msgError'];
                             $entityValues[$ruleKey] = $specialCharsValidated['data'];
-                        } else if ($ruleDesc === RuleType::FOREIGN_KEY) {
-                            if ($ruleValue === 'one') {
-                                if (!$data) {
-                                    $data = $lastInsertedIds[$ruleKey][0];
-                                }
-                                $fKOneName=$ruleKey;
-                                $entityValues[$ruleKey] = $data;
-                            } else if ($ruleValue === 'many') {
-                                if(array_key_exists($ruleKey, $lastInsertedIds)){
-                                    $fKValues=$lastInsertedIds[$ruleKey];
-                                }else{
-                                    $fKValues = $data;
-                                }
-                                $many = true;
-                                if($fKValues) {
-                                    foreach ($fKValues as $count => $fKValue) {
-                                        $entityForeignKeys[$count][$ruleKey] = $fKValue;
-                                    }
-                                }
-                                $entityValues[$ruleKey] = null;
-                            }
                         }
                     } else {
                         switch ($rule) {
                             case RuleType::REQUIRED:
                                 $msgError .= self::validateEmpty($data);
-                                $entityValues[$ruleKey] = $data;
                                 break;
+                            case RuleType::STRING:
+                                $data = trim($data);
+                                if(self::validateString($data)){
+                                    $entityValues[$ruleKey] = $data;
+                                }
                             case RuleType::UNIQUE:
+                                $data = trim($data);
                                 $msgError .= self::validateUnique($data, $entityDAO, $entityId, $ruleKey);
                                 break;
                             case RuleType::FLOAT:
@@ -130,9 +114,9 @@ class Validator
                                 $entityValues[$ruleKey] = $isIntValidated['data'];
                                 break;
                             case RuleType::CHECKBOX:
-                                $isIntValidated = self::validateInt($data);
-                                $msgError .= $isIntValidated['msgError'];
-                                $entityValues[$ruleKey] = $isIntValidated['data'];
+                                $isCheckboxValidated = self::validateInt($data);
+                                $msgError .= $isCheckboxValidated['msgError'];
+                                $entityValues[$ruleKey] = $isCheckboxValidated['data'];
                                 break;
                             case RuleType::EMAIL:
                                 $data = trim($data);
@@ -153,8 +137,7 @@ class Validator
                                 $entityValues[$ruleKey] = $dateValidated['data'];
                                 break;
                             case RuleType::PHONE:
-                                $data = trim($data);
-                                $phone = $data;
+                                $phone = trim($data);
                                 $phone = str_replace(['(', ')', ' ', '-'], "", $phone);
                                 $entityValues[$ruleKey] = $phone;
                                 break;
@@ -165,15 +148,13 @@ class Validator
                                 $entityValues[$ruleKey] = $money;
                                 break;
                             case RuleType::PASSWORD:
-                                $data = trim($data);
-                                $password = $data;
+                                $password = trim($data);
                                 $passwordHash = password_hash($password, PASSWORD_DEFAULT);
                                 $entityValues[$ruleKey] = $passwordHash;
                                 break;
                             case RuleType::CONFIRM:
                                 $fieldData = trim($data);
-                                $fieldKey = $ruleKey;
-                                $confirmFieldName = 'confirm' . ucfirst($fieldKey);
+                                $confirmFieldName = 'confirm' . ucfirst($ruleKey);
                                 if (array_key_exists($confirmFieldName, $formData)) {
                                     $confirmFieldData = $formData[$confirmFieldName];
                                     if ($fieldData !== $confirmFieldData) {
@@ -207,8 +188,7 @@ class Validator
                                 $msgError.=$filesValidated["msgError"];
                                 break;
                             case RuleType::CPF:
-                                $data = trim($data);
-                                $cpf = $data;
+                                $cpf = trim($data);
                                 if (!self::validateCPF($cpf)) {
                                     $msgError .= "CPF inválido.<br />";
                                 }
@@ -216,8 +196,7 @@ class Validator
                                 $entityValues[$ruleKey] = $cpf;
                                 break;
                             case RuleType::CNPJ:
-                                $data = trim($data);
-                                $cnpj = $data;
+                                $cnpj = trim($data);
                                 if (!self::validateCNPJ($cnpj)) {
                                     $msgError .= "CNPJ inválido.<br />";
                                 }
@@ -232,6 +211,26 @@ class Validator
                                 $urlValidated=self::validateUrl($url);
                                 $entityValues[$ruleKey] = $urlValidated["data"];
                                 $msgError.=$urlValidated["msgError"];
+                                break;
+                            case RuleType::FOREIGN_KEY_ONE:
+                                if (!$data) {
+                                    $data = $lastInsertedIds[$ruleKey][0];
+                                }
+                                $fKOneName = $ruleKey;
+                                $entityValues[$ruleKey] = $data;
+                            case RuleType::FOREIGN_KEY_MANY:
+                                if(array_key_exists($ruleKey, $lastInsertedIds)){
+                                    $fKValues=$lastInsertedIds[$ruleKey];
+                                }else{
+                                    $fKValues = $data;
+                                }
+                                $many = true;
+                                if($fKValues) {
+                                    foreach ($fKValues as $count => $fKValue) {
+                                        $entityForeignKeys[$count][$ruleKey] = $fKValue;
+                                    }
+                                }
+                                $entityValues[$ruleKey] = null;
                                 break;
                         }
                     }
@@ -450,6 +449,16 @@ class Validator
             $msgError .= "Já cadastrado. Escolha outro.<br />";
         }
         return $msgError;
+    }
+
+    public static function validateString($data)
+    {
+        if ($data) {
+            if (!is_string($data)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public static function validateFloat($data)

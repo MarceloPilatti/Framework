@@ -7,7 +7,8 @@ abstract class RuleType
     const REQUIRED = 'required';
     const UNIQUE = 'unique';
     const DEFAULT = 'default';
-    const FOREIGN_KEY = 'foreign-key';
+    const FOREIGN_KEY_ONE = 'foreign-key-one';
+    const FOREIGN_KEY_MANY = 'foreign-key-many';
     const MIN = 'min';
     const MAX = 'max';
     const INT = 'int';
@@ -27,4 +28,5 @@ abstract class RuleType
     const URL = 'url';
     const SLUG = 'slug';
     const CHECKBOX = 'checkbox';
+    const STRING = 'string';
 }
