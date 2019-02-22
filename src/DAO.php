@@ -193,7 +193,7 @@ abstract class DAO
         }
     }
 
-    public function getBy($criteria, $orderBy = null, $limit = null, $offset = null, $count = null, $oneRegister = false, $returnEntity = true, $column = '*')
+    public function getBy($criteria, $orderBy = null, $limit = null, $offset = null, $count = null, $oneRegister = false, $returnEntity = true, $column = '*', $returnOnlyId=false)
     {
         try {
             $tableName = $this->tableName;
@@ -234,6 +234,9 @@ abstract class DAO
                 return null;
             }
             $stmt->closeCursor();
+            if($returnOnlyId){
+                return $rows;
+            }
             if ($count) {
                 return reset($rows[0]);
             }
