@@ -203,8 +203,11 @@ abstract class DAO
             if ($count) {
                 $sql = 'SELECT COUNT(' . $column . ')';
             }
-            $sql .= " FROM $tableName WHERE ";
+            $sql .= " FROM $tableName";
             foreach ($criteria as $columnName => $columnValue) {
+                if ($columnValue === reset($criteria)) {
+                    $sql .= " WHERE ";
+                }
                 if (!is_numeric($columnName)) {
                     $columnName = strtoupper(preg_replace('/(?<=\\w)(?=[A-Z])/', "_$1", $columnName));
                     $sql .= $columnName . '=?';
@@ -241,9 +244,8 @@ abstract class DAO
                 return reset($rows[0]);
             }
             $justId = false;
-            $isFk = substr($column, -3) == '_ID';
-            if ($isFk) {
-                $newTableName = substr($column, 0, strpos($column, '_ID'));
+            if (strpos($column, "_ID") !== false) {
+                $newTableName=str_replace(['DISTINCT',' ','(',')', '_ID'], '', $column);
                 $newEntity = 'Main\\Entity\\' . ucfirst(strtolower($newTableName));
                 $this->entity = $newEntity;
                 $this->tableName = $newTableName;
