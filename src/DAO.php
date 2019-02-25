@@ -50,7 +50,7 @@ abstract class DAO
 
     public function getColumnNames()
     {
-        $sql = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='" . Config::getDBName() . "' AND TABLE_NAME = '$this->tableName'";
+        $sql = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA='" . Config::getDBName('main') . "' AND TABLE_NAME = '$this->tableName'";
         $stmt = $this->dBConnection->prepare($sql);
         try {
             $columnNames = [];
@@ -67,7 +67,7 @@ abstract class DAO
             }
             return $columnNames;
         } catch (\Throwable $t) {
-            Logger::log($t->getFile() . " (" . $t->getLine() . ") Erro ao recuperar os nomes das tabelas do banco: " . $t->getMessage());
+            PortalLogger::getLogger()->err($t->getFile() . " (" . $t->getLine() . ") Erro ao recuperar os nomes das tabelas do banco: " . $t->getMessage());
             return false;
         }
     }
@@ -178,7 +178,7 @@ abstract class DAO
             }
             return false;
         } catch (\Throwable $t) {
-            Logger::log($t->getFile() . " (" . $t->getLine() . ") Erro ao executar a sql: " . $t->getMessage());
+            PortalLogger::getLogger()->err($t->getFile() . " (" . $t->getLine() . ") Erro ao executar a sql: " . $t->getMessage());
             return false;
         }
     }
@@ -188,7 +188,7 @@ abstract class DAO
         try {
             return $this->getBy(['id' => $id], null, null, null, false, true, $returnEntity);
         } catch (\Throwable $t) {
-            Logger::log($t->getFile() . " (" . $t->getLine() . ") Erro ao recuperar 1 registro do banco: " . $t->getMessage());
+            PortalLogger::getLogger()->err($t->getFile() . " (" . $t->getLine() . ") Erro ao recuperar 1 registro do banco: " . $t->getMessage());
             return null;
         }
     }
@@ -238,6 +238,7 @@ abstract class DAO
             }
             $stmt->closeCursor();
             if($returnOnlyId){
+                $rows = array_column($rows, $column);
                 return $rows;
             }
             if ($count) {
@@ -259,7 +260,7 @@ abstract class DAO
             $this->tableName = $tableName;
             return $rows;
         } catch (\Throwable $t) {
-            Logger::log($t->getFile() . " (" . $t->getLine() . ") Erro ao recuperar 1 registro do banco: " . $t->getMessage());
+            PortalLogger::getLogger()->err($t->getFile() . " (" . $t->getLine() . ") Erro ao recuperar 1 registro do banco: " . $t->getMessage());
             return null;
         }
     }
@@ -299,7 +300,7 @@ abstract class DAO
             }
             return $entities;
         } catch (\Throwable $t) {
-            Logger::log($t->getFile() . " (" . $t->getLine() . ") Erro ao listar as entidades: " . $t->getMessage());
+            PortalLogger::getLogger()->err($t->getFile() . " (" . $t->getLine() . ") Erro ao listar as entidades: " . $t->getMessage());
             return null;
         }
     }
@@ -327,18 +328,19 @@ abstract class DAO
                         $name = substr($name, 0, strpos($name, 'Id'));
                         $tableName = $name;
                         if (strpos($name, 'parent') !== false) {
+                            if(!$data || $data==$row['ID']){
+                                $entityAttrs[$name] = $data;
+                                continue;
+                            }
                             $tableName = strtolower(substr($name, 6));
                         }
                         $tableNameTemp = $this->tableName;
                         $entityTemp = $this->entity;
                         $this->entity = 'Main\\Entity\\' . ucfirst($tableName);
                         $this->tableName = strtoupper(preg_replace('/(?<=\\w)(?=[A-Z])/', "_$1", $tableName));
-                        $value = $this->getById($data, true);
+                        $value = $this->getById($data, false);
                         $this->tableName = $tableNameTemp;
                         $this->entity = $entityTemp;
-                        if ($value) {
-                            $value = $value->getAttrs();
-                        }
                     } else {
                         if ($d && $d->format($format) === $data) {
                             $value = $d->format('d/m/Y H:i:s');
@@ -356,7 +358,7 @@ abstract class DAO
             }
             return $entityList;
         } catch (\Throwable $t) {
-            Logger::log($t->getFile() . " (" . $t->getLine() . ") Erro ao listar as entidades: " . $t->getMessage());
+            PortalLogger::getLogger()->err($t->getFile() . " (" . $t->getLine() . ") Erro ao listar as entidades: " . $t->getMessage());
             return null;
         }
     }
@@ -400,16 +402,6 @@ abstract class DAO
         return $sql;
     }
 
-    public function delete($id)
-    {
-        try {
-            return $this->deleteBy(['id'=>$id]);
-        } catch (\Throwable $t) {
-            Logger::log($t->getFile() . " (" . $t->getLine() . ") Erro ao remover um registro do banco: " . $t->getMessage());
-            return null;
-        }
-    }
-
     public function deleteBy($criteria)
     {
         try {
@@ -432,21 +424,22 @@ abstract class DAO
             $stmt = $this->setParams($params, $stmt);
             return $this->executeSql($stmt, false);
         } catch (\Throwable $t) {
-            Logger::log($t->getFile() . " (" . $t->getLine() . ") Erro ao remover registros do banco: " . $t->getMessage());
+            PortalLogger::getLogger()->err($t->getFile() . " (" . $t->getLine() . ") Erro ao remover registros do banco: " . $t->getMessage());
             return null;
         }
     }
 
-    public function deleteAll($ids = null)
+    public function delete($ids = [])
     {
         try {
-            $columnNames = $this->getColumnNames();
-            $idColumn = reset($columnNames);
+            if(!is_array($ids)){
+                $ids=[$ids];
+            }
             $tableName = $this->tableName;
             $sql = "DELETE FROM " . $tableName;
             if ($ids) {
                 $idsCount = count($ids);
-                $sql .= " WHERE " . $idColumn . " in (";
+                $sql .= " WHERE ID IN (";
                 for ($count = 0; $count < $idsCount; $count++) {
                     if ($count == $idsCount - 1) {
                         $sql .= "?";
@@ -456,7 +449,7 @@ abstract class DAO
                 }
                 $sql .= ")";
             } else {
-                $sql .= " WHERE " . $idColumn . " > 0";
+                $sql .= " WHERE ID > 0";
             }
             $stmt = $this->dBConnection->prepare($sql);
             if (!$stmt) {
@@ -467,7 +460,7 @@ abstract class DAO
             }
             return $this->executeSql($stmt, false);
         } catch (\Throwable $t) {
-            Logger::log($t->getFile() . " (" . $t->getLine() . ") Erro ao remover registros do banco: " . $t->getMessage());
+            PortalLogger::getLogger()->err($t->getFile() . " (" . $t->getLine() . ") Erro ao remover registros do banco: " . $t->getMessage());
             return null;
         }
     }
@@ -505,7 +498,7 @@ abstract class DAO
             $rows = $this->getData($rows, $returnEntity);
             return $rows;
         } catch (\Throwable $t) {
-            Logger::log($t->getFile() . " (" . $t->getLine() . ") Erro ao recuperar registros do banco: " . $t->getMessage());
+            PortalLogger::getLogger()->err($t->getFile() . " (" . $t->getLine() . ") Erro ao recuperar registros do banco: " . $t->getMessage());
             return null;
         }
     }
@@ -555,7 +548,7 @@ abstract class DAO
             $rows = $this->getData($rows, $returnEntity);
             return $rows;
         } catch (\Throwable $t) {
-            Logger::log($t->getFile() . " (" . $t->getLine() . ") Erro ao recuperar registros do banco: " . $t->getMessage());
+            PortalLogger::getLogger()->err($t->getFile() . " (" . $t->getLine() . ") Erro ao recuperar registros do banco: " . $t->getMessage());
             return null;
         }
     }
