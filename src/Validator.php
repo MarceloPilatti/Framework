@@ -74,19 +74,45 @@ class Validator
                     if (strpos($rule, ":") !== false) {
                         $ruleInfo = explode(":", $rule);
                         list($ruleDesc, $ruleValue)=$ruleInfo;
-                        if ($ruleDesc === RuleType::MIN) {
-                            $msgError .= self::validateMaxMin($data, $ruleValue, RuleType::MIN);
-                        } else if ($ruleDesc === RuleType::MAX) {
-                            $msgError .= self::validateMaxMin($data, $ruleValue, RuleType::MAX);
-                        } else if ($ruleDesc === RuleType::DEFAULT) {
-                            $entityValues[$ruleKey] = $ruleValue;
-                        } else if ($ruleDesc === RuleType::SLUG) {
-                            $stringToSlugify=$formData[$ruleValue];
-                            $slug=Slugify::get($stringToSlugify);
-                            $entityValues[$ruleKey] = $slug;
-                        } else if ($ruleDesc === RuleType::NORMAL_CHARS) {
-                            $specialCharsValidated = self::validateSpecialChars($data, $ruleValue);
-                            $msgError .= $specialCharsValidated['msgError'];
+                        switch ($ruleDesc){
+                            case RuleType::MIN:
+                                $msgError .= self::validateMaxMin($data, $ruleValue, RuleType::MIN);
+                                break;
+                            case RuleType::MAX:
+                                $msgError .= self::validateMaxMin($data, $ruleValue, RuleType::MAX);
+                                break;
+                            case RuleType::DEFAULT:
+                                $entityValues[$ruleKey] = $ruleValue;
+                                break;
+                            case RuleType::SLUG:
+                                $stringToSlugify=$formData[$ruleValue];
+                                $slug=Slugify::get($stringToSlugify);
+                                $entityValues[$ruleKey] = $slug;
+                                break;
+                            case RuleType::NORMAL_CHARS:
+                                $specialCharsValidated = self::validateSpecialChars($data, $ruleValue);
+                                $msgError .= $specialCharsValidated['msgError'];
+                                break;
+                            case RuleType::DATETIME:
+                                $column="";
+                                if(strpos('greater-than', $ruleValue)!==false || strpos('greater-than', $ruleValue) !== false){
+                                    list($ruleValue, $columnName)=explode('?', $ruleValue);
+                                    $column=$formData[$columnName];
+                                }
+                                $dateValidated = self::validateDate($data, RuleType::DATETIME, $ruleValue, $column);
+                                $msgError .= $dateValidated['msgError'];
+                                $entityValues[$ruleKey] = $dateValidated['data'];
+                                break;
+                            case RuleType::DATE:
+                                $column="";
+                                if(strpos('greater-than', $ruleValue)!==false || strpos('greater-than', $ruleValue) !== false){
+                                    list($ruleValue, $columnName)=explode('?', $ruleValue);
+                                    $column=$formData[$columnName];
+                                }
+                                $dateValidated = self::validateDate($data, RuleType::DATE, $ruleValue, $column);
+                                $msgError .= $dateValidated['msgError'];
+                                $entityValues[$ruleKey] = $dateValidated['data'];
+                                break;
                         }
                     } else {
                         switch ($rule) {
@@ -98,6 +124,7 @@ class Validator
                                 if(self::validateString($data)){
                                     $entityValues[$ruleKey] = $data;
                                 }
+                                break;
                             case RuleType::UNIQUE:
                                 $data = trim($data);
                                 $msgError .= self::validateUnique($data, $entityDAO, $entityId, $ruleKey);
@@ -124,16 +151,6 @@ class Validator
                                 break;
                             case RuleType::HTML:
                                 $entityValues[$ruleKey] = htmlentities($data);
-                                break;
-                            case RuleType::DATETIME:
-                                $dateValidated = self::validateDate($data, RuleType::DATETIME);
-                                $msgError .= $dateValidated['msgError'];
-                                $entityValues[$ruleKey] = $dateValidated['data'];
-                                break;
-                            case RuleType::DATE:
-                                $dateValidated = self::validateDate($data, RuleType::DATE);
-                                $msgError .= $dateValidated['msgError'];
-                                $entityValues[$ruleKey] = $dateValidated['data'];
                                 break;
                             case RuleType::PHONE:
                                 $phone = trim($data);
@@ -163,6 +180,8 @@ class Validator
                                 }
                                 break;
                             case RuleType::FILE:
+                                $selectedSubproject = $session->offsetGet('selectedSubproject');
+                                $selectedSubprojectId=$selectedSubproject->id;
                                 $prefix = $entityRule["prefix"]??"";
                                 array_push($prefixes, $prefix);
                                 if($entityId){
@@ -175,14 +194,14 @@ class Validator
                                 $validExtensions = $entityRule["extensions"]??'';
                                 $isImage = $entityRule["isImage"]??0;
                                 $imgSize = $entityRule["size"]??null;
-                                $files = $data;
-                                if(!$files){
+                                $files = reset($data);
+                                if (!$files || !isset($files[0]['name'])) {
                                     break;
                                 }
-                                if (!is_array($files)) {
+                                if (!is_array($files) || $files['name']) {
                                     $files = [$files];
                                 }
-                                $filesValidated=self::validateFiles($files, $validExtensions, $entityClass, $isImage, $imgSize, $prefix, $entityMultipleFiles);
+                                $filesValidated=self::validateFiles($files, $validExtensions, $entityClass, $isImage, $imgSize, $selectedSubprojectId, $prefix, $entityMultipleFiles);
                                 $entityMultipleFiles=$filesValidated["data"];
                                 $msgError.=$filesValidated["msgError"];
                                 break;
@@ -213,7 +232,10 @@ class Validator
                                 break;
                             case RuleType::FOREIGN_KEY_ONE:
                                 if (!$data) {
-                                    $data = $lastInsertedIds[$ruleKey][0];
+                                    $data = $lastInsertedIds[$ruleKey];
+                                    if(is_array($data)){
+                                        $data=$data[0];
+                                    }
                                 }
                                 $fKOneName = $ruleKey;
                                 $entityValues[$ruleKey] = $data;
@@ -296,7 +318,7 @@ class Validator
                         if ($entityForeignKeys) {
                             if($fKOneName) {
                                 $fKOneId = $lastInsertedIds[$fKOneName];
-                                $allDeleted = $entityDAO->deleteBy([$fKOneName => $fKOneId]);
+                                $allDeleted = $entityDAO->delete([$fKOneName => $fKOneId]);
                                 if (!$allDeleted) {
                                     $entityDAO->rollback();
                                     return 2;
@@ -325,7 +347,7 @@ class Validator
                     } else {
                         $entity->setAttrs($entityValues);
                         if ($entityId) {
-                            $result = $entityDAO->update($entity);
+                            $result = $entityDAO->update(['entity'=>$entity]);
                             if (!$result) {
                                 if($isTransaction){
                                     $entityDAO->rollback();
@@ -504,13 +526,13 @@ class Validator
         return $msgError;
     }
 
-    public static function validateDate($data, $ruleType)
+    public static function validateDate($data, $ruleType, $param=null, $column="")
     {
         $data = trim($data);
         $result = [];
         $msgError = '';
-        $inputFormat='';
-        $storeFormat='';
+        $inputFormat = '';
+        $storeFormat = '';
         if ($ruleType == RuleType::DATETIME) {
             $inputFormat = 'd/m/Y H:i:s';
             $storeFormat = 'Y-m-d H:i:s';
@@ -520,18 +542,31 @@ class Validator
                 $storeFormat = 'Y-m-d';
             }
         }
-        if ($data) {
+        if ($param === "now") {
+            $date = new \DateTime('now', new \DateTimeZone("America/Sao_Paulo"));
+        }else{
             $verifierDate = DateTime::createFromFormat($inputFormat, $data);
             if ($verifierDate && $verifierDate->format($inputFormat) == $data) {
                 $msgError .= "Data inválida.<br />";
             }
             $date = $data;
-            $date = new \DateTime(str_replace('/', '-', $date), new \DateTimeZone("America/Sao_Paulo"));
-            $data = $date->format($storeFormat);
-        } else {
-            $date = new \DateTime('now', new \DateTimeZone("America/Sao_Paulo"));
-            $data = $date->format($storeFormat);
+            if($param === "validate"){
+                $date = new \DateTime(str_replace('/', '-', $date), new \DateTimeZone("America/Sao_Paulo"));
+            }else if($param==="greater-than"){
+                $date = new \DateTime(str_replace('/', '-', $date), new \DateTimeZone("America/Sao_Paulo"));
+                $dateCompare = new \DateTime(str_replace('/', '-', $column), new \DateTimeZone("America/Sao_Paulo"));
+                if($date < $dateCompare){
+                    $msgError .= "Data inválida.<br />";
+                }
+            }else if($param==="smaller-than"){
+                $date = new \DateTime(str_replace('/', '-', $date), new \DateTimeZone("America/Sao_Paulo"));
+                $dateCompare = new \DateTime(str_replace('/', '-', $column), new \DateTimeZone("America/Sao_Paulo"));
+                if($date > $dateCompare){
+                    $msgError .= "Data inválida.<br />";
+                }
+            }
         }
+        $data = $date->format($storeFormat);
         $result['data'] = $data;
         $result['msgError'] = $msgError;
         return $result;
